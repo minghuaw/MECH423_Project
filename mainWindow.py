@@ -30,13 +30,13 @@ class MainWindow(QMainWindow):
 		self.timer.start(1000)
 
 	def btnStart_clicked(self):
-		print "start clicked"
+		print("start clicked")
 		sevoLeft = 1806
 		servoRight = 1053
 		# Create four bytes from the integer
 		servoLeft_bytes = sevoLeft.to_bytes(2, byteorder='big', signed=False)
 		servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
-		print(servoLeft_bytes, servoRight_bytes)
+		print((servoLeft_bytes, servoRight_bytes))
 		# self.ser.write(
 		
 
@@ -44,9 +44,9 @@ class MainWindow(QMainWindow):
 	def btnConnect_clicked(self):
 		try:
 			self.ser = serial.Serial('COM14',9600,timeout = 1)
-			print "connection established"
+			print("connection established")
 		except serial.serialutil.SerialException:
-			print "serial port not available"
+			print("serial port not available")
 		# print(ser.name)
 		# ser.write(self.txtServoLeft,self.txtServoRight)
 		# ser.close()
