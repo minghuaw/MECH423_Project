@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import __init__
+
 import os
 import sys
 from PyQt5.QtGui import *
@@ -37,16 +39,17 @@ class MainWindow(QMainWindow):
 		servoLeft_bytes = sevoLeft.to_bytes(2, byteorder='big', signed=False)
 		servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
 		print(servoLeft_bytes, servoRight_bytes)
-		# self.ser.write(
+		self.ser.write(servoLeft_bytes)
+		self.ser.write(servoRight_bytes)
 		
 
 	
 	def btnConnect_clicked(self):
-		try:
-			self.ser = serial.Serial('COM14',9600,timeout = 1)
+		#try:
+			self.ser = serial.Serial('/dev/ttyACM0',9600,timeout = 1)
 			print ("connection established")
-		except serial.serialutil.SerialException:
-			print ("serial port not available")
+		#except serial.serialutil.SerialException:
+		#	print ("serial port not available")
 		# print(ser.name)
 		# ser.write(self.txtServoLeft,self.txtServoRight)
 		# ser.close()
