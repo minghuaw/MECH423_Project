@@ -11,7 +11,6 @@ import serial
 import serial.tools.list_ports
 import struct
 
-
 class MainWindow(QMainWindow):
 	def __init__(self):
 		super(MainWindow, self).__init__()
