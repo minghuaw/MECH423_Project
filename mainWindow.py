@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
 	
 	def btnConnect_clicked(self):
 		try:
-			self.ser = serial.Serial('COM14',9600,timeout = 1)
+			self.ser = serial.Serial('/dev/ttyACM0',9600,timeout = 1)
 			print ("connection established")
 		except serial.serialutil.SerialException:
 			print ("serial port not available")
