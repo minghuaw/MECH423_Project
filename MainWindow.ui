@@ -86,12 +86,12 @@
      <string>Connect</string>
     </property>
    </widget>
-   <widget class="QComboBox" name="comboBox">
+   <widget class="QComboBox" name="cmbPorts">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>92</width>
+      <width>111</width>
       <height>27</height>
      </rect>
     </property>

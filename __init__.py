@@ -35,4 +35,4 @@ def inv_kinematics (x,y):
 		output2 = rad2deg(theta2-pi/2)/90*1200+1500
 	else:
 		output2 = rad2deg(theta2)/90*900+600
-	return int(output1),int(output2)
+	return deg1,deg2,output1,output2
