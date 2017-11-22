@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import __init__
+from __init__ import *
 
 import os
 import sys
@@ -31,25 +31,37 @@ class MainWindow(QMainWindow):
 		# self.timer.timeout.connect(self.timer_timeout)
 		self.timer.start(1000)
 
+	def retrieve_XY(self):
+		try:
+			x = int(self.txtPosX.toPlainText())
+			y = int(self.txtPosY.toPlainText())	
+		except ValueError:
+			x= nan
+			y = nan
+		return x,y
+
 	def btnStart_clicked(self):
-		print ("start clicked")
-		sevoLeft = 1806
-		servoRight = 1053
+		#print ("start clicked")
+		x,y = self.retrieve_XY()
+		if math.isnan(x) or math.isnan(y):
+			return 
+		servoLeft,servoRight = inv_kinematics(x,y)
+		print (servoLeft, servoRight)
+		#sevoLeft = 1806
+		#servoRight = 1053
 		# Create four bytes from the integer
-		servoLeft_bytes = sevoLeft.to_bytes(2, byteorder='big', signed=False)
+		servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
 		servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
 		print(servoLeft_bytes, servoRight_bytes)
 		self.ser.write(servoLeft_bytes)
 		self.ser.write(servoRight_bytes)
-		
-
 	
 	def btnConnect_clicked(self):
-		#try:
+		try:
 			self.ser = serial.Serial('/dev/ttyACM0',9600,timeout = 1)
 			print ("connection established")
-		#except serial.serialutil.SerialException:
-		#	print ("serial port not available")
+		except serial.serialutil.SerialException:
+			print ("serial port not available")
 		# print(ser.name)
 		# ser.write(self.txtServoLeft,self.txtServoRight)
 		# ser.close()
