@@ -38,7 +38,23 @@ class MainWindow(QMainWindow):
 
 		# set initial position
 		self.x0 = 0
-		self.y0 = 10
+		self.y0 = 20 
+
+		# set up plot
+		self.grpPlot.setXRange(-70,70)
+		self.grpPlot.setYRange(0,70)
+		self.grpPlot.setMouseEnabled(False, False)
+		degLeft,degRight,s1,s2 = inv_kinematics(self.x0,self.y0)
+		JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
+		x = [O1X,JLX,self.x0,JRX,O2X]
+		y = [O1Y,JLY,self.y0,JRY,O2Y]
+		self.grpPlot.clear()
+		self.grpPlot.plot(x,y)
+
+		
+		# setup control timer for sending bytes and update graph
+		self.cmdTimer = QTimer(self)
+		self.cmdTimer.timeout.connect(self.move_trajectory)
 
 	def retrieve_XY(self):
 		try:
@@ -55,7 +71,7 @@ class MainWindow(QMainWindow):
 		if math.isnan(x) or math.isnan(y):
 			print("Please enter X,Y values")
 			return 
-		self.move_trajectory(x,y)
+		self.generate_trajectory(x,y)
 		
 	def btnConnect_clicked(self):
 		if not self.ser_flag:
@@ -72,9 +88,6 @@ class MainWindow(QMainWindow):
 			print("disconnected")
 			ser.ser_flag = false
 			serl.btnConnect.setText('Connect')
-		# print(ser.name)
-		# ser.write(self.txtServoLeft,self.txtServoRight)
-		# ser.close()
 		
 	def timer_timeout(self):
 		portInfo = serial.tools.list_ports.comports()
@@ -83,47 +96,61 @@ class MainWindow(QMainWindow):
 		self.cmbPorts.clear()
 		self.cmbPorts.addItems(["1","2,","3,","4"])
 
-	def move_trajectory(self,x,y):
+	def generate_trajectory(self,x,y):
 		increment = 1 
 		dx = x- self.x0
 		dy = y- self.y0
 		c = sqrt(dx**2+dy**2)
-		steps = int(c/increment)
-		for i in range (0,steps):
-			# target positions
-			tx = self.x0+dx/steps
-			ty = self.y0+dy/steps
-			degLeft, degRight,servoLeft,servoRight = inv_kinematics(tx,ty)
-			print (servoLeft, servoRight)
+		self.steps = int(c/increment)
+		self.ind = 0
+		self.dx = dx/self.steps
+		self.dy = dy/self.steps
+		self.cmdTimer.start(50)
 
-			# check if solution is valid
-			if math.isnan(servoLeft) or math.isnan(servoRight):
-				print("Position cannot be reached")
-				break
-			else:
-				# update current values
-				self.x0 = tx
-				self.y0 = ty
-				print (self.x0,self.y0)
-				# convert double to int
-				servoLeft = int(servoLeft)
-				servoRight = int(servoRight)
+	def move_trajectory(self):
+		# target positions
+		tx = self.x0+self.dx
+		ty = self.y0+self.dy
+		degLeft,degRight,servoLeft,servoRight = inv_kinematics(tx,ty)
+		print (servoLeft, servoRight)
+
+		# check if solution is valid
+		if math.isnan(servoLeft) or math.isnan(servoRight):
+			print("Position cannot be reached")
+			self.cmdTimer.stop()	
+		else:
+			# update current values
+			self.x0 = tx
+			self.y0 = ty
+			print (self.x0,self.y0)
 			
-				# Create four bytes from the integer
-				servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
-				servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
-				print(servoLeft_bytes, servoRight_bytes)
-		
-				if self.ser_flag:
-					self.ser.write(servoLeft_bytes)
-					self.ser.write(servoRight_bytes)
-				else:
-					print("Arduino cannot be found")
-				# update GUI not working.... probably need multithreading
-				self.txtServoLeft.setText("{:10.2f}".format(degLeft))
-				self.txtServoRight.setText("{:10.4f}".format(degRight))
-			# delay for 50ms	
-			time.sleep(0.05)
+			# convert double to int
+			servoLeft = int(servoLeft)
+			servoRight = int(servoRight)
+			
+			# Create four bytes from the integer
+			servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
+			servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
+			print(servoLeft_bytes, servoRight_bytes)
+			
+			# send command to arduino
+			if self.ser_flag:
+				self.ser.write(servoLeft_bytes)
+				self.ser.write(servoRight_bytes)
+			else:
+				print("Arduino cannot be found")
+			# update GUI
+			self.txtServoLeft.setText("{:10.2f}".format(degLeft))
+			self.txtServoRight.setText("{:10.2f}".format(degRight))
+			# update plot
+			JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
+			x = [O1X,JLX,self.x0,JRX,O2X]
+			y = [O1Y,JLY,self.y0,JRY,O2Y]
+			self.grpPlot.clear()
+			self.grpPlot.plot(x,y)
+		self.ind += 1
+		if self.ind == self.steps:
+			self.cmdTimer.stop()
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
