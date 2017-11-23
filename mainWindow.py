@@ -44,13 +44,9 @@ class MainWindow(QMainWindow):
 		self.grpPlot.setXRange(-70,70)
 		self.grpPlot.setYRange(0,70)
 		self.grpPlot.setMouseEnabled(False, False)
-		degLeft,degRight,s1,s2 = inv_kinematics(self.x0,self.y0)
-		JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
-		x = [O1X,JLX,self.x0,JRX,O2X]
-		y = [O1Y,JLY,self.y0,JRY,O2Y]
-		self.grpPlot.clear()
-		self.grpPlot.plot(x,y)
-
+		degLeft,degRight,servoLeft,servoRight = inv_kinematics(self.x0,self.y0)
+		self.send_command(servoLeft,servoRight)
+		self.update_plot(degLeft,degRight,self.x0,self.y0)
 		
 		# setup control timer for sending bytes and update graph
 		self.cmdTimer = QTimer(self)
@@ -124,33 +120,45 @@ class MainWindow(QMainWindow):
 			self.y0 = ty
 			print (self.x0,self.y0)
 			
-			# convert double to int
-			servoLeft = int(servoLeft)
-			servoRight = int(servoRight)
-			
-			# Create four bytes from the integer
-			servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
-			servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
-			print(servoLeft_bytes, servoRight_bytes)
-			
-			# send command to arduino
-			if self.ser_flag:
-				self.ser.write(servoLeft_bytes)
-				self.ser.write(servoRight_bytes)
-			else:
-				print("Arduino cannot be found")
+			# send command to arduino			
+			self.send_command(servoLeft,servoRight)	
+
 			# update GUI
 			self.txtServoLeft.setText("{:10.2f}".format(degLeft))
 			self.txtServoRight.setText("{:10.2f}".format(degRight))
 			# update plot
-			JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
-			x = [O1X,JLX,self.x0,JRX,O2X]
-			y = [O1Y,JLY,self.y0,JRY,O2Y]
-			self.grpPlot.clear()
-			self.grpPlot.plot(x,y)
+			self.update_plot(degLeft,degRight,tx,ty)	
+		# increase current index
 		self.ind += 1
 		if self.ind == self.steps:
 			self.cmdTimer.stop()
+	
+	def send_command(self,servoLeft,servoRight):
+		# convert double to int
+		servoLeft = int(servoLeft)
+		servoRight = int(servoRight)
+			
+		# Create four bytes from the integer 
+		servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
+		servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
+		print(servoLeft_bytes, servoRight_bytes)
+		
+		# send command to arduino
+		if self.ser_flag:
+			self.ser.write(servoLeft_bytes)
+			self.ser.write(servoRight_bytes)
+		else: 
+			print("Arduino cannot be found") 
+	def update_plot(self,degLeft,degRight,tx,ty):
+		JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
+		x = [O1X,JLX,tx,JRX,O2X]
+		y = [O1Y,JLY,ty,JRY,O2Y]
+		self.grpPlot.clear()
+		self.grpPlot.plot(x,y)
+
+	def plot_mouseclick(self):
+		print ("mouse clicked")
+
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
