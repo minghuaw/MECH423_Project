@@ -3,19 +3,6 @@
 
 from __init__ import *
 
-import os
-import sys
-from PyQt5.QtGui import *
-from PyQt5 import uic
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-import serial
-import serial.tools.list_ports
-import struct
-import time
-
-
 class MainWindow(QMainWindow):
 	def __init__(self):
 		super(MainWindow, self).__init__()
@@ -27,6 +14,7 @@ class MainWindow(QMainWindow):
 		# connect button signal
 		self.btnConnect.clicked.connect(self.btnConnect_clicked)
 		self.btnStart.clicked.connect(self.btnStart_clicked)
+		self.btnCapture.clicked.connect(self.btnCapture_clicked)
 
 		# setup timer
 		self.timer = QTimer(self)
@@ -51,6 +39,13 @@ class MainWindow(QMainWindow):
 		# setup control timer for sending bytes and update graph
 		self.cmdTimer = QTimer(self)
 		self.cmdTimer.timeout.connect(self.move_trajectory)
+		
+		# setup video streaming timer
+		self.frmTimer = QTimer(self)
+		self.frmTimer.timeout.connect(self.update_frame)
+		self.cap = cv2.VideoCapture(0)
+		self.frmTimer.start(1000/30)
+		self.captured = False
 
 	def retrieve_XY(self):
 		try:
@@ -159,6 +154,49 @@ class MainWindow(QMainWindow):
 	def plot_mouseclick(self):
 		print ("mouse clicked")
 
+	def update_frame(self):
+		ret, self.frame = self.cap.read()
+		self.show_image(self.frame)
+
+	def show_image(self,img):
+		# convert opencv matrix to Qimage
+		img = cv2.flip(img,1)
+		img = QImage(img,img.shape[1],self.frame.shape[0],self.frame.strides[0], QImage.Format_RGB888)
+		self.video.setPixmap(QPixmap.fromImage(img))
+
+	def btnCapture_clicked(self):
+		if not self.captured:
+			# stop video capture
+			self.frmTimer.stop()
+			self.cap.release()
+			kernel = ones((5,5),float32)/25
+			filtered = cv2.filter2D(self.frame,-1,kernel)
+			gray = cv2.cvtColor(filtered,cv2.COLOR_BGR2GRAY)
+			# create empty image
+			height, width = gray.shape
+			image = zeros((height,width,3),uint8)
+			#Create default parametrization LSD
+			lsd = cv2.createLineSegmentDetector(0)
+			lines = lsd.detect(gray)[0]
+			# iterate through lines
+			for line in lines:
+				pts = line[0]
+				pt1 = (int(pts[0]),int(pts[1]))
+				pt2 = (int(pts[2]),int(pts[3]))
+				dist = sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
+				if (dist < 20):
+					continue
+				cv2.line(image,pt1,pt2,(0,0,255))
+			self.show_image(image)
+			# flip flag
+			self.captured = True
+			self.btnCapture.setText("Reset")
+		else:
+			self.cap = cv2.VideoCapture(0)
+			self.frmTimer.start()
+			self.captured = False
+			self.btnCapture.setText("Capture")
+			
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)

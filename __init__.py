@@ -1,5 +1,6 @@
 import os
 import sys
+import cv2
 import pyqtgraph as pg
 from PyQt5.QtGui import *
 from PyQt5 import uic
@@ -10,6 +11,8 @@ import serial
 import struct
 from numpy import *
 import math
+import serial.tools.list_ports
+import time
 
 r1 = 35 #mm
 r2 = 45 #mm
