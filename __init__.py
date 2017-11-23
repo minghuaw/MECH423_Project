@@ -17,6 +17,7 @@ import threading
 
 r1 = 35 #mm
 r2 = 45 #mm
+# r2 = 55
 r3 = 13.5 #mm
 O1X = -r3
 O1Y = 0
@@ -30,7 +31,7 @@ def inv_kinematics (x,y):
 	theta12 = arccos((x+r3)/PA1)
 	theta1 = theta11 + theta12
 	deg1 = rad2deg(theta1)
-	if (deg1 >= 180):
+	if (deg1 >= 210):
 		output1 = nan	# set software limit of 180 degrees
 	elif(deg1 > 90):
 		output1 = rad2deg(theta1-pi/2)/90*900+1600
@@ -43,7 +44,7 @@ def inv_kinematics (x,y):
 	deg2 = rad2deg(theta2)
 	if (deg2 > 90):
 		output2 = rad2deg(theta2-pi/2)/90*1200+1500
-	elif (deg2 > 0):
+	elif (deg2 > -30):
 		output2 = rad2deg(theta2)/90*900+600
 	else:
 		output2 = nan	# set software limit of 0 degrees
