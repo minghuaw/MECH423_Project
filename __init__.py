@@ -16,13 +16,17 @@ import time
 import threading
 
 r1 = 35 #mm
-r2 = 45 #mm
-# r2 = 55
-r3 = 13.5 #mm
+r2 = 60 #mm
+r3 = 18.5 #mm
 O1X = -r3
 O1Y = 0
 O2X = r3
 O2Y = 0
+xlim = 85 # plot axis lim
+ylim = 85
+degLeftLim = 240 
+degRightLim = -60
+
 def inv_kinematics (x,y):
 	# left motor
 	PA1 = sqrt((x+r3)**2+y**2)
@@ -31,23 +35,23 @@ def inv_kinematics (x,y):
 	theta12 = arccos((x+r3)/PA1)
 	theta1 = theta11 + theta12
 	deg1 = rad2deg(theta1)
-	if (deg1 >= 210):
-		output1 = nan	# set software limit of 180 degrees
-	elif(deg1 > 90):
+	if(deg1 > 90 and deg1<degLeftLim):
 		output1 = rad2deg(theta1-pi/2)/90*900+1600
-	else:
+	elif(degLeftLim-180<deg1<=90):
 		output1 = rad2deg(theta1)/90*900+700
+	else:
+		output1 = nan	# set software limit
 	# right motor
 	theta21 = arccos((PA2**2 + r1**2 - r2**2) / (2 * r1 * PA2))
 	theta22 = arccos((x-r3)/PA2)
 	theta2 = -theta21 + theta22
 	deg2 = rad2deg(theta2)
-	if (deg2 > 90):
+	if (deg2 > 90 and deg2<180+degRightLim):
 		output2 = rad2deg(theta2-pi/2)/90*1200+1500
-	elif (deg2 > -30):
+	elif (deg2 > degRightLim):
 		output2 = rad2deg(theta2)/90*900+600
 	else:
-		output2 = nan	# set software limit of 0 degrees
+		output2 = nan	# set software limit 
 	return deg1,deg2,output1,output2
 
 def for_kinematics(deg1,deg2):
