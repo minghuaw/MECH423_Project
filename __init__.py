@@ -1,26 +1,27 @@
 import os
 import sys
 import cv2
-import pyqtgraph as pg
 from PyQt5.QtGui import *
 from PyQt5 import uic
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
+import pyqtgraph as pg
 import serial
 import struct
 from numpy import *
 import math
 import serial.tools.list_ports
 import time
+import threading
 
 r1 = 35 #mm
 r2 = 45 #mm
 r3 = 13.5 #mm
-O1X = -r3;
-O1Y = 0;
-O2X = r3;
-O2Y = 0;
+O1X = -r3
+O1Y = 0
+O2X = r3
+O2Y = 0
 def inv_kinematics (x,y):
 	# left motor
 	PA1 = sqrt((x+r3)**2+y**2)

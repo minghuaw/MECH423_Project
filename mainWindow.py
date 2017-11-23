@@ -24,9 +24,19 @@ class MainWindow(QMainWindow):
 		# setup serial flag
 		self.ser_flag = False
 
+		# setup data packet
+		self.startByte = 0xff.to_bytes(1, byteorder="little", signed=False)
+		self.endByte = 0x00.to_bytes(1, byteorder="little", signed=False)
+
+		# test serial communication
+		# self.read_serial_thread()
+
+		# setup serial port
+		self.ser_port = '/dev/ttyACM0'
+
 		# set initial position
 		self.x0 = 0
-		self.y0 = 20 
+		self.y0 = 78
 
 		# set up plot
 		self.grpPlot.setXRange(-70,70)
@@ -67,25 +77,27 @@ class MainWindow(QMainWindow):
 	def btnConnect_clicked(self):
 		if not self.ser_flag:
 			try:
-				self.ser = serial.Serial('/dev/ttyACM0',9600,timeout = 1)
+				self.ser = serial.Serial(self.ser_port,9600,timeout = 1)
 				print ("connection established")
 				self.ser_flag = True
-				self.btnConnect.setText('Disconnect')	
+				self.btnConnect.setText('Disconnect')
 			except serial.serialutil.SerialException:
 				print ("serial port not available")
 		else:
 			#try:
 			self.ser.close()
 			print("disconnected")
-			ser.ser_flag = false
-			serl.btnConnect.setText('Connect')
+			self.ser_flag = False
+			self.btnConnect.setText('Connect')     			
 		
 	def timer_timeout(self):
 		portInfo = serial.tools.list_ports.comports()
-		for i in range (0,len(portInfo)):
-			print (portInfo[i].name)
+		# for i in range (0,len(portInfo)):
+		# 	print (portInfo[i].name)
 		self.cmbPorts.clear()
-		self.cmbPorts.addItems(["1","2,","3,","4"])
+		# self.cmbPorts.addItems(["1","2,","3,","4"])
+		self.cmbPorts.addItems([portInfo[i].name for i in range(size(portInfo))])
+		self.ser_port = '/dev/' + str(self.cmbPorts.currentText())
 
 	def generate_trajectory(self,x,y):
 		increment = 1 
@@ -96,7 +108,7 @@ class MainWindow(QMainWindow):
 		self.ind = 0
 		self.dx = dx/self.steps
 		self.dy = dy/self.steps
-		self.cmdTimer.start(50)
+		self.cmdTimer.start(10)
 
 	def move_trajectory(self):
 		# target positions
@@ -136,14 +148,31 @@ class MainWindow(QMainWindow):
 		# Create four bytes from the integer 
 		servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
 		servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
-		print(servoLeft_bytes, servoRight_bytes)
+		self.set_end_byte(servoLeft_bytes, servoRight_bytes)
+		print(self.startByte, servoLeft_bytes, servoRight_bytes, self.endByte)
 		
 		# send command to arduino
 		if self.ser_flag:
+			self.ser.write(self.startByte)
 			self.ser.write(servoLeft_bytes)
 			self.ser.write(servoRight_bytes)
+			self.ser.write(self.endByte)
 		else: 
-			print("Arduino cannot be found") 
+			print("Arduino cannot be found")
+
+	def set_end_byte(self, leftBytes, rightBytes):
+		high, low = bytes(leftBytes)
+		if low == 255:
+			self.endByte = self.endByte|0x01
+		if high == 255:
+			self.endByte = self.endByte|0x02
+
+		high, low = bytes(rightBytes)
+		if low == 255:
+			self.endByte = self.endByte|0x10
+		if high == 255:
+			self.endByte = self.endByte|0x20
+			
 	def update_plot(self,degLeft,degRight,tx,ty):
 		JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
 		x = [O1X,JLX,tx,JRX,O2X]
