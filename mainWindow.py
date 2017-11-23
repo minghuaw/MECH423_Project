@@ -36,11 +36,11 @@ class MainWindow(QMainWindow):
 
 		# set initial position
 		self.x0 = 0
-		self.y0 = 78
+		self.y0 = 50 
 
 		# set up plot
-		self.grpPlot.setXRange(-70,70)
-		self.grpPlot.setYRange(0,70)
+		self.grpPlot.setXRange(-xlim,xlim)
+		self.grpPlot.setYRange(0,ylim)
 		self.grpPlot.setMouseEnabled(False, False)
 		degLeft,degRight,servoLeft,servoRight = inv_kinematics(self.x0,self.y0)
 		self.send_command(servoLeft,servoRight)
@@ -97,8 +97,8 @@ class MainWindow(QMainWindow):
 		print ("clicked")
 		mousePoint = evt.scenePos()
 		# print(mousePoint)
-		x = (mousePoint.x()-40)/(600-40)*140-70	# 40 px margin
-		y = 70-mousePoint.y()/(300-20)*70	# 20 px margin
+		x = (mousePoint.x()-40)/(600-40)*2*xlim-xlim	# 40 px margin
+		y = ylim-mousePoint.y()/(300-20)*ylim	# 20 px margin
 		print (x,y)
 		# update GUI
 		self.txtPosX.setText("{:10d}".format(int(x)))
@@ -195,6 +195,9 @@ class MainWindow(QMainWindow):
 		y = [O1Y,JLY,ty,JRY,O2Y]
 		self.grpPlot.clear()
 		self.grpPlot.plot(x,y)
+		boundX = [-50,-50,50,50,-50]
+		boundY = [20,80,80,20,20]
+		self.grpPlot.plot(boundX,boundY)
 
 	def plot_mouseclick(self):
 		print ("mouse clicked")
