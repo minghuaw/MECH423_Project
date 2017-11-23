@@ -15,7 +15,7 @@ import serial.tools.list_ports
 import time
 import threading
 
-r1 = 35 #mm
+r1 = 40 #mm
 r2 = 60 #mm
 r3 = 18.5 #mm
 O1X = -r3
@@ -24,8 +24,8 @@ O2X = r3
 O2Y = 0
 xlim = 85 # plot axis lim
 ylim = 85
-degLeftLim = 240 
-degRightLim = -60
+deg1Off = 70 
+deg2Off = -deg1Off
 
 def inv_kinematics (x,y):
 	# left motor
@@ -35,10 +35,10 @@ def inv_kinematics (x,y):
 	theta12 = arccos((x+r3)/PA1)
 	theta1 = theta11 + theta12
 	deg1 = rad2deg(theta1)
-	if(deg1 > 90 and deg1<degLeftLim):
-		output1 = rad2deg(theta1-pi/2)/90*900+1600
-	elif(degLeftLim-180<deg1<=90):
-		output1 = rad2deg(theta1)/90*900+700
+	if(deg1 > 90+deg1Off and deg1<180+deg1Off):
+		output1 = (rad2deg(theta1-pi/2)-deg1Off)/90*900+1600
+	elif(deg1Off<=deg1<=90+deg1Off):
+		output1 = (rad2deg(theta1)-deg1Off)/90*900+700
 	else:
 		output1 = nan	# set software limit
 	# right motor
@@ -46,10 +46,10 @@ def inv_kinematics (x,y):
 	theta22 = arccos((x-r3)/PA2)
 	theta2 = -theta21 + theta22
 	deg2 = rad2deg(theta2)
-	if (deg2 > 90 and deg2<180+degRightLim):
-		output2 = rad2deg(theta2-pi/2)/90*1200+1500
-	elif (deg2 > degRightLim):
-		output2 = rad2deg(theta2)/90*900+600
+	if (deg2 > 90+deg2Off and deg2<180+deg2Off):
+		output2 = (rad2deg(theta2-pi/2)-deg2Off)/90*1200+1500
+	elif (deg2Off <= deg2 <= 90+deg2Off):
+		output2 = (rad2deg(theta2)-deg2Off)/90*900+600
 	else:
 		output2 = nan	# set software limit 
 	return deg1,deg2,output1,output2

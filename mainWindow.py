@@ -195,7 +195,7 @@ class MainWindow(QMainWindow):
 		y = [O1Y,JLY,ty,JRY,O2Y]
 		self.grpPlot.clear()
 		self.grpPlot.plot(x,y)
-		boundX = [-50,-50,50,50,-50]
+		boundX = [-40,-40,40,40,-40]
 		boundY = [20,80,80,20,20]
 		self.grpPlot.plot(boundX,boundY)
 
@@ -204,11 +204,13 @@ class MainWindow(QMainWindow):
 
 	def update_frame(self):
 		ret, self.frame = self.cap.read()
+		self.frame = cv2.resize(self.frame,(320,240),interpolation=cv2.INTER_CUBIC)
 		self.show_image(self.frame)
 
 	def show_image(self,img):
 		# convert opencv matrix to Qimage
-		img = cv2.flip(img,1)
+		#img = cv2.flip(img,1)
+		img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
 		img = QImage(img,img.shape[1],self.frame.shape[0],self.frame.strides[0], QImage.Format_RGB888)
 		self.video.setPixmap(QPixmap.fromImage(img))
 
@@ -226,6 +228,9 @@ class MainWindow(QMainWindow):
 			#Create default parametrization LSD
 			lsd = cv2.createLineSegmentDetector(0)
 			lines = lsd.detect(gray)[0]
+			sp = [] # starting points
+			tp = [] # target points
+			i = 0
 			# iterate through lines
 			for line in lines:
 				pts = line[0]
@@ -234,16 +239,25 @@ class MainWindow(QMainWindow):
 				dist = sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
 				if (dist < 20):
 					continue
+				sp.append(pt1)
+				tp.append(pt2)
 				cv2.line(image,pt1,pt2,(0,0,255))
+				#cv2.imshow("LVD",image)
+				#cv2.waitKey(0)
+
 			self.show_image(image)
 			# flip flag
 			self.captured = True
 			self.btnCapture.setText("Reset")
+			self.sketch_image(sp,tp)
 		else:
 			self.cap = cv2.VideoCapture(0)
 			self.frmTimer.start()
 			self.captured = False
 			self.btnCapture.setText("Capture")
+	
+	def sketch_image(self,start,target):
+		print ("sketch image")
 			
 
 if __name__ == '__main__':
