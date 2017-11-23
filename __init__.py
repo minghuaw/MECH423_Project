@@ -15,7 +15,7 @@ import serial.tools.list_ports
 import time
 import threading
 
-r1 = 35 #mm
+r1 = 40 #mm
 r2 = 60 #mm
 r3 = 18.5 #mm
 O1X = -r3
