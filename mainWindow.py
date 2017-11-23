@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
 		degLeft,degRight,servoLeft,servoRight = inv_kinematics(self.x0,self.y0)
 		self.send_command(servoLeft,servoRight)
 		self.update_plot(degLeft,degRight,self.x0,self.y0)
+		self.grpPlot.scene().sigMouseClicked.connect(self.grpPlot_clicked)
 		
 		# setup control timer for sending bytes and update graph
 		self.cmdTimer = QTimer(self)
@@ -87,9 +88,22 @@ class MainWindow(QMainWindow):
 			#try:
 			self.ser.close()
 			print("disconnected")
-			self.ser_flag = False
-			self.btnConnect.setText('Connect')     			
-		
+			ser.ser_flag = False
+			serl.btnConnect.setText('Connect')
+	
+	def grpPlot_clicked(self,evt):
+		print ("clicked")
+		mousePoint = evt.scenePos()
+		# print(mousePoint)
+		x = (mousePoint.x()-40)/(600-40)*140-70	# 40 px margin
+		y = 70-mousePoint.y()/(300-20)*70	# 20 px margin
+		print (x,y)
+		# update GUI
+		self.txtPosX.setText("{:10d}".format(int(x)))
+		self.txtPosY.setText("{:10d}".format(int(y)))
+		# btnStart_clicked
+		self.btnStart_clicked()
+
 	def timer_timeout(self):
 		portInfo = serial.tools.list_ports.comports()
 		# for i in range (0,len(portInfo)):
