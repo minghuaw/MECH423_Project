@@ -151,18 +151,39 @@
       <height>300</height>
      </rect>
     </property>
+    <property name="mouseTracking">
+     <bool>false</bool>
+    </property>
    </widget>
    <widget class="QLabel" name="video">
     <property name="geometry">
      <rect>
-      <x>770</x>
-      <y>0</y>
+      <x>750</x>
+      <y>20</y>
       <width>361</width>
       <height>451</height>
      </rect>
     </property>
+    <property name="mouseTracking">
+     <bool>false</bool>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::StrongFocus</enum>
+    </property>
+    <property name="contextMenuPolicy">
+     <enum>Qt::DefaultContextMenu</enum>
+    </property>
     <property name="styleSheet">
      <string notr="true">color: rgb(20, 80, 75);</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Box</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Plain</enum>
+    </property>
+    <property name="lineWidth">
+     <number>3</number>
     </property>
     <property name="text">
      <string/>
@@ -171,7 +192,7 @@
    <widget class="QPushButton" name="btnCapture">
     <property name="geometry">
      <rect>
-      <x>890</x>
+      <x>880</x>
       <y>480</y>
       <width>105</width>
       <height>33</height>
