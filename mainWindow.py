@@ -82,15 +82,17 @@ class MainWindow(QMainWindow):
 				print ("connection established")
 				self.ser_flag = True
 				self.btnConnect.setText('Disconnect')
+				self.x0 = 0  # servo will return to this position after reconnect
+				self.y0 = 78 # servo will return to this position after reconnect
 			except serial.serialutil.SerialException:
 				print ("serial port not available")
 		else:
 			#try:
 			self.ser.close()
 			print("disconnected")
-			ser.ser_flag = False
-			serl.btnConnect.setText('Connect')
-	
+			self.ser_flag = False
+			self.btnConnect.setText('Connect')
+
 	def grpPlot_clicked(self,evt):
 		print ("clicked")
 		mousePoint = evt.scenePos()
