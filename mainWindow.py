@@ -17,6 +17,7 @@ class MainWindow(QMainWindow):
 		self.btnConnect.clicked.connect(self.btnConnect_clicked)
 		self.btnStart.clicked.connect(self.btnStart_clicked)
 		self.btnCapture.clicked.connect(self.btnCapture_clicked)
+		self.btnLoad.clicked.connect(self.btnLoad_clicked)
 
 		# setup timer
 		self.timer = QTimer(self)
@@ -45,9 +46,7 @@ class MainWindow(QMainWindow):
 		# setup video streaming timer
 		self.frmTimer = QTimer(self)
 		self.frmTimer.timeout.connect(self.update_frame)
-		self.cap = cv2.VideoCapture(0)
-		self.frmTimer.start(1000/30)
-		self.captured = False
+		self.captured = "Camera" 
 
 		# setup path worker thread
 		self.thread = QThread()
@@ -56,7 +55,7 @@ class MainWindow(QMainWindow):
 		self.path_worker.text_sig.connect(self.update_angle)
 		# setup sign for update plot
 		self.path_worker.plot_sig.connect(self.update_plot)
-		# move woker to thread
+		## move woker to thread
 		self.path_worker.moveToThread(self.thread)
 		self.thread.start()
 
@@ -83,6 +82,13 @@ class MainWindow(QMainWindow):
 			self.btnConnect.setText('Connect')
 		else:
 			self.btnConnect.setText('Disconnect')
+
+	def btnLoad_clicked(self):
+		fileName = QFileDialog.getOpenFileName(self,"Open Image","/home", "Image Files (*.png *.jpg *.bmp)");
+		image = cv2.imread(str(fileName[0]))
+		width,height = image.shape[:2]
+		image = cv2.resize(image,(int(height/width*240),240),interpolation=cv2.INTER_CUBIC)
+		self.show_image(image)
 
 	def grpPlot_clicked(self,evt):
 		# print ("clicked")
@@ -197,13 +203,17 @@ class MainWindow(QMainWindow):
 
 	def show_image(self,img):
 		# convert opencv matrix to Qimage
-		#img = cv2.flip(img,1)
 		img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-		img = QImage(img,img.shape[1],self.frame.shape[0],self.frame.strides[0], QImage.Format_RGB888)
+		img = QImage(img,img.shape[1],img.shape[0],img.strides[0], QImage.Format_RGB888)
 		self.video.setPixmap(QPixmap.fromImage(img))
 
 	def btnCapture_clicked(self):
-		if not self.captured:
+		if self.captured == "Camera":
+			self.cap = cv2.VideoCapture(0)
+			self.frmTimer.start(1000/30)
+			self.captured = "Capture"
+			self.btnCapture.setText(self.captured)
+		elif self.captured == "Capture":
 			# stop video capture
 			self.frmTimer.stop()
 			self.cap.release()
@@ -244,15 +254,14 @@ class MainWindow(QMainWindow):
 				cv2.line(image,pt1,pt2,(0,0,255))
 			self.show_image(self.frame)
 			# flip flag
-			self.captured = True
-			self.btnCapture.setText("Reset")
+			self.captured = "Reset" 
+			self.btnCapture.setText(self.captured)
 			# sketch the lines
 			self.path_worker.sketch_sig.emit(sp,tp)
 		else:
-			self.cap = cv2.VideoCapture(0)
-			self.frmTimer.start()
-			self.captured = False
-			self.btnCapture.setText("Capture")
+			self.captured = "Camera"
+			self.btnCapture.setText(self.captured)
+			self.video.clear()
 			self.c3.clear()	
 	# def sketch_image(self,start,target):
 	#	self.point_ind = 0 

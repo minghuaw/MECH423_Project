@@ -199,7 +199,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Capture</string>
+     <string>Camera</string>
     </property>
    </widget>
    <widget class="QPushButton" name="btnLoad">
