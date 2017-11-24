@@ -5,6 +5,7 @@ from PyQt5.QtGui import *
 from PyQt5 import uic
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import *
 import pyqtgraph as pg
 import serial

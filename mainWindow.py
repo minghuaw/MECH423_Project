@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from __init__ import *
+from PathWorker import PathWorker
 
 class MainWindow(QMainWindow):
-	finish_moving = pyqtSignal()
+	# finish_moving = pyqtSignal()
 	def __init__(self):
 		super(MainWindow, self).__init__()
 		# initialize setting window
@@ -22,19 +23,6 @@ class MainWindow(QMainWindow):
 		self.timer.timeout.connect(self.timer_timeout)
 		self.timer.start(1000)
 
-		# setup serial flag
-		self.ser_flag = False
-
-		# setup data packet
-		self.startByte = 0xff.to_bytes(1, byteorder="little", signed=False)
-		self.endByte = 0x00.to_bytes(1, byteorder="little", signed=False)
-
-		# test serial communication
-		# self.read_serial_thread()
-
-		# setup serial port
-		self.ser_port = '/dev/ttyACM0'
-
 		# set initial position
 		self.x0 = 0
 		self.y0 = 50 
@@ -43,15 +31,17 @@ class MainWindow(QMainWindow):
 		self.grpPlot.setXRange(-xlim,xlim)
 		self.grpPlot.setYRange(0,ylim)
 		self.grpPlot.setMouseEnabled(False, False)
-		degLeft,degRight,servoLeft,servoRight = inv_kinematics(self.x0,self.y0)
-		self.send_command(servoLeft,servoRight)
-		self.update_plot(degLeft,degRight,self.x0,self.y0)
 		self.grpPlot.scene().sigMouseClicked.connect(self.grpPlot_clicked)
-		
-		# setup control timer for sending bytes and update graph
-		self.cmdTimer = QTimer(self)
-		self.cmdTimer.timeout.connect(self.move_path)
-		
+		boundX = [boundXLeft,boundXLeft,boundXRight,boundXRight,boundXLeft]
+		boundY = [boundYDown,boundYUp,boundYUp,boundYDown,boundYDown]
+		self.c1 = self.grpPlot.plot(boundX,boundY)
+		# set servo to inital position
+		degLeft,degRight,servoLeft,servoRight = inv_kinematics(self.x0,self.y0)
+		JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
+		x = [O1X,JLX,self.x0,JRX,O2X]
+		y = [O1Y,JLY,self.y0,JRY,O2Y]
+		self.c2 = self.grpPlot.plot(x,y)
+
 		# setup video streaming timer
 		self.frmTimer = QTimer(self)
 		self.frmTimer.timeout.connect(self.update_frame)
@@ -59,9 +49,16 @@ class MainWindow(QMainWindow):
 		self.frmTimer.start(1000/30)
 		self.captured = False
 
-		# setup signals for moving according to a list of points
-		self.finish_moving.connect(self.sketch_next_point)
-		self.point_ind = nan
+		# setup path worker thread
+		self.thread = QThread()
+		self.path_worker = PathWorker(0,50)
+		# setup sig for update angle
+		self.path_worker.text_sig.connect(self.update_angle)
+		# setup sign for update plot
+		self.path_worker.plot_sig.connect(self.update_plot)
+		# move woker to thread
+		self.path_worker.moveToThread(self.thread)
+		self.thread.start()
 
 	def retrieve_XY(self):
 		try:
@@ -78,25 +75,14 @@ class MainWindow(QMainWindow):
 		if math.isnan(x) or math.isnan(y):
 			print("Please enter X,Y values")
 			return 
-		self.generate_path(x,y)
-		
+		# self.generate_path(x,y)
+		self.path_worker.generate_sig.emit(x,y)
 	def btnConnect_clicked(self):
-		if not self.ser_flag:
-			try:
-				self.ser = serial.Serial(self.ser_port,9600,timeout = 1)
-				print ("connection established")
-				self.ser_flag = True
-				self.btnConnect.setText('Disconnect')
-				self.x0 = 0  # servo will return to this position after reconnect
-				self.y0 = 78 # servo will return to this position after reconnect
-			except serial.serialutil.SerialException:
-				print ("serial port not available")
-		else:
-			#try:
-			self.ser.close()
-			print("disconnected")
-			self.ser_flag = False
+		self.path_worker.serial_sig.emit()
+		if not self.path_worker.ser_flag:
 			self.btnConnect.setText('Connect')
+		else:
+			self.btnConnect.setText('Disconnect')
 
 	def grpPlot_clicked(self,evt):
 		# print ("clicked")
@@ -109,102 +95,100 @@ class MainWindow(QMainWindow):
 		self.txtPosX.setText("{:10d}".format(int(x)))
 		self.txtPosY.setText("{:10d}".format(int(y)))
 		# generate path 
-		self.generate_path(x,y)
+		self.path_worker.generate_sig.emit(x,y)
 
 	def timer_timeout(self):
 		portInfo = serial.tools.list_ports.comports()
-		# for i in range (0,len(portInfo)):
-		# 	print (portInfo[i].name)
 		self.cmbPorts.clear()
-		# self.cmbPorts.addItems(["1","2,","3,","4"])
 		self.cmbPorts.addItems([portInfo[i].name for i in range(size(portInfo))])
 		self.ser_port = '/dev/' + str(self.cmbPorts.currentText())
 
-	def generate_path(self,x,y):
-		increment = 1 
-		dx = x- self.x0
-		dy = y- self.y0
-		c = sqrt(dx**2+dy**2)
-		self.steps = int(c/increment)
-		self.step_ind = 0
-		self.dx = dx/self.steps
-		self.dy = dy/self.steps
-		self.cmdTimer.start(10)
+	# def generate_path(self,x,y):
+	#	increment = 1 
+	#	dx = x- self.x0
+	#	dy = y- self.y0
+	#	c = sqrt(dx**2+dy**2)
+	#	self.steps = int(c/increment)
+	#	self.step_ind = 0
+	#	self.dx = dx/self.steps
+	#	self.dy = dy/self.steps
+	#	self.cmdTimer.start(10)
 
-	def move_path(self):
-		# target positions
-		tx = self.x0+self.dx
-		ty = self.y0+self.dy
-		degLeft,degRight,servoLeft,servoRight = inv_kinematics(tx,ty)
-		# print (servoLeft, servoRight)
+	# def move_path(self):
+	#	# target positions
+	#	tx = self.x0+self.dx
+	#	ty = self.y0+self.dy
+	#	degLeft,degRight,servoLeft,servoRight = inv_kinematics(tx,ty)
+	#	# print (servoLeft, servoRight)
 
-		# check if solution is valid
-		if math.isnan(servoLeft) or math.isnan(servoRight):
-			print("Position cannot be reached")
-			self.cmdTimer.stop()	
-		else:
-			# update current values
-			self.x0 = tx
-			self.y0 = ty
-			print (self.x0,self.y0)
-			
-			# send command to arduino			
-			self.send_command(servoLeft,servoRight)	
+	#	# check if solution is valid
+	#	if math.isnan(servoLeft) or math.isnan(servoRight):
+	#		print("Position cannot be reached")
+	#		self.cmdTimer.stop()	
+	#	else:
+	#		# update current values
+	#		self.x0 = tx
+	#		self.y0 = ty
+	#		print (self.x0,self.y0)
+	#		
+	#		# send command to arduino			
+	#		self.send_command(servoLeft,servoRight)	
 
-			# update GUI
-			self.txtServoLeft.setText("{:10.2f}".format(degLeft))
-			self.txtServoRight.setText("{:10.2f}".format(degRight))
-			# update plot
-			self.update_plot(degLeft,degRight,tx,ty)	
-		# increase current index
-		self.step_ind += 1
-		if self.step_ind == self.steps:
-			self.cmdTimer.stop()
-			if not math.isnan(self.point_ind):
-				self.finish_moving.emit()
-	
-	def send_command(self,servoLeft,servoRight):
-		# convert double to int
-		servoLeft = int(servoLeft)
-		servoRight = int(servoRight)
-			
-		# Create four bytes from the integer 
-		servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
-		servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
-		self.set_end_byte(servoLeft_bytes, servoRight_bytes)
-		print(servoLeft, servoRight)
-		
-		# send command to arduino
-		if self.ser_flag:
-			self.ser.write(self.startByte)
-			self.ser.write(servoLeft_bytes)
-			self.ser.write(servoRight_bytes)
-			self.ser.write(self.endByte)
-		else: 
-			print("Arduino cannot be found")
+	#		# update GUI
+	#		self.txtServoLeft.setText("{:10.2f}".format(degLeft))
+	#		self.txtServoRight.setText("{:10.2f}".format(degRight))
+	#		# update plot
+	#		self.update_plot(degLeft,degRight,tx,ty)	
+	#	# increase current index
+	#	self.step_ind += 1
+	#	if self.step_ind == self.steps:
+	#		self.cmdTimer.stop()
+	#		if not math.isnan(self.point_ind):
+	#			self.finish_moving.emit()
+	# 
+	# def send_command(self,servoLeft,servoRight):
+	#	# convert double to int
+	#	servoLeft = int(servoLeft)
+	#	servoRight = int(servoRight)
+	#		
+	#	# Create four bytes from the integer 
+	#	servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
+	#	servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
+	#	self.set_end_byte(servoLeft_bytes, servoRight_bytes)
+	#	# print(self.startByte, servoLeft_bytes, servoRight_bytes, self.endByte)
+	#	
+	#	# send command to arduino
+	#	if self.ser_flag:
+	#		self.ser.write(self.startByte)
+	#		self.ser.write(servoLeft_bytes)
+	#		self.ser.write(servoRight_bytes)
+	#		self.ser.write(self.endByte)
+	#	else: 
+	#		print("Arduino cannot be found")
 
-	def set_end_byte(self, leftBytes, rightBytes):
-		high, low = bytes(leftBytes)
-		if low == 255:
-			self.endByte = self.endByte|0x01
-		if high == 255:
-			self.endByte = self.endByte|0x02
+	# def set_end_byte(self, leftBytes, rightBytes):
+	#	high, low = bytes(leftBytes)
+	#	if low == 255:
+	#		self.endByte = self.endByte|0x01
+	#	if high == 255:
+	#		self.endByte = self.endByte|0x02
 
-		high, low = bytes(rightBytes)
-		if low == 255:
-			self.endByte = self.endByte|0x10
-		if high == 255:
-			self.endByte = self.endByte|0x20
+	#	high, low = bytes(rightBytes)
+	#	if low == 255:
+	#		self.endByte = self.endByte|0x10
+	#	if high == 255:
+	#		self.endByte = self.endByte|0x20
 			
 	def update_plot(self,degLeft,degRight,tx,ty):
 		JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
 		x = [O1X,JLX,tx,JRX,O2X]
 		y = [O1Y,JLY,ty,JRY,O2Y]
-		self.grpPlot.clear()
-		self.grpPlot.plot(x,y)
-		boundX = [boundXLeft,boundXLeft,boundXRight,boundXRight,boundXLeft]
-		boundY = [boundYDown,boundYUp,boundYUp,boundYDown,boundYDown]
-		self.grpPlot.plot(boundX,boundY)
+		self.c2.clear()
+		self.c2 = self.grpPlot.plot(x,y)
+
+	def update_angle(self,left,right):
+		self.txtServoLeft.setText(left)
+		self.txtServoRight.setText(right)
 
 	def update_frame(self):
 		ret, self.frame = self.cap.read()
@@ -234,7 +218,6 @@ class MainWindow(QMainWindow):
 			lines = lsd.detect(gray)[0]
 			sp = [] # starting points
 			tp = [] # target points
-			i = 0
 			# iterate through lines
 			for line in lines:
 				pts = line[0]
@@ -243,47 +226,56 @@ class MainWindow(QMainWindow):
 				dist = sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
 				if (dist < 20):
 					continue
-				sp.append((pt1[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/240*(boundYUp-boundYDown)+boundYUp))
-				tp.append((pt2[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/240*(boundYUp-boundYDown)+boundYUp))
-				#tp.append((pt2[0]/320*80,pt2[1]/240*60))
-				cv2.line(image,pt1,pt2,(0,0,255))
-				#cv2.imshow("LVD",image)
-				#cv2.waitKey(0)
 
-			self.show_image(image)
+				pt1_mm = [pt1[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/240*(boundYUp-boundYDown)+boundYUp]
+				pt2_mm = [pt2[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/240*(boundYUp-boundYDown)+boundYUp]
+				# if (pt1_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+				#	pt1_mm[0] = -37
+				# if (pt1_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+				#	pt1_mm[0] = 37
+				# if (pt2_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+				#	pt2_mm[0] = -37
+				# if (pt2_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+				#	pt2_mm[0] = 37
+				sp.append(pt1_mm)
+				tp.append(pt2_mm)
+				self.c3 = self.grpPlot.plot(([pt1_mm[0],pt2_mm[0]]),([pt1_mm[1],pt2_mm[1]]))
+				# show processed image
+				cv2.line(image,pt1,pt2,(0,0,255))
+			self.show_image(self.frame)
 			# flip flag
 			self.captured = True
 			self.btnCapture.setText("Reset")
 			# sketch the lines
-			self.sketch_image(sp,tp)
+			self.path_worker.sketch_sig.emit(sp,tp)
 		else:
 			self.cap = cv2.VideoCapture(0)
 			self.frmTimer.start()
 			self.captured = False
 			self.btnCapture.setText("Capture")
-	
-	def sketch_image(self,start,target):
-		self.point_ind = 0 
-		self.lift = True
-		self.start = start
-		self.target = target
-		print (start)
-		# input("press enter to continue")
-		self.sketch_next_point()
-	
-	def sketch_next_point(self):
-		if self.lift == True:	# generate traj for start point, lift arms
-			pt = self.start[self.point_ind]
-			print ("lift")
-		elif self.lift == False:	# generate traj for target point, lower arms
-			pt = self.target[self.point_ind]
-			print ("down")
-		self.generate_path(pt[0],pt[1])
-		# increase index to next point
-		self.point_ind += 1
-		if self.point_ind >= len(self.start):
-			self.point_ind = nan
-			print ("lift")
+			self.c3.clear()	
+	# def sketch_image(self,start,target):
+	#	self.point_ind = 0 
+	#	self.lift = True
+	#	self.start = start
+	#	self.target = target
+	#	print (start)
+	#	# input("press enter to continue")
+	#	self.sketch_next_point()
+	# 
+	# def sketch_next_point(self):
+	#	if self.lift == True:	# generate traj for start point, lift arms
+	#		pt = self.start[self.point_ind]
+	#		print ("lift")
+	#	elif self.lift == False:	# generate traj for target point, lower arms
+	#		pt = self.target[self.point_ind]
+	#		print ("down")
+	#	self.generate_path(pt[0],pt[1])
+	#	# increase index to next point
+	#	self.point_ind += 1
+	#	if self.point_ind >= len(self.start):
+	#		self.point_ind = nan
+	#		print ("lift")
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)

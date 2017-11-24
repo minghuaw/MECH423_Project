@@ -192,14 +192,27 @@
    <widget class="QPushButton" name="btnCapture">
     <property name="geometry">
      <rect>
-      <x>880</x>
-      <y>480</y>
+      <x>770</x>
+      <y>440</y>
       <width>105</width>
       <height>33</height>
      </rect>
     </property>
     <property name="text">
      <string>Capture</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnLoad">
+    <property name="geometry">
+     <rect>
+      <x>980</x>
+      <y>440</y>
+      <width>105</width>
+      <height>33</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Load Image</string>
     </property>
    </widget>
   </widget>
