@@ -172,7 +172,7 @@ class MainWindow(QMainWindow):
 		servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
 		servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
 		self.set_end_byte(servoLeft_bytes, servoRight_bytes)
-		# print(self.startByte, servoLeft_bytes, servoRight_bytes, self.endByte)
+		print(servoLeft, servoRight)
 		
 		# send command to arduino
 		if self.ser_flag:
