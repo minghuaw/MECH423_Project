@@ -26,6 +26,10 @@ xlim = 85 # plot axis lim
 ylim = 85
 deg1Off = 70 
 deg2Off = -deg1Off
+boundXLeft = -40 # plot bound
+boundXRight = 40
+boundYUp = 80
+boundYDown = 20
 
 def inv_kinematics (x,y):
 	# left motor

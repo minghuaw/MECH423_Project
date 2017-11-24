@@ -4,6 +4,7 @@
 from __init__ import *
 
 class MainWindow(QMainWindow):
+	finish_moving = pyqtSignal()
 	def __init__(self):
 		super(MainWindow, self).__init__()
 		# initialize setting window
@@ -38,7 +39,7 @@ class MainWindow(QMainWindow):
 		self.x0 = 0
 		self.y0 = 50 
 
-		# set up plot
+		# setup plot
 		self.grpPlot.setXRange(-xlim,xlim)
 		self.grpPlot.setYRange(0,ylim)
 		self.grpPlot.setMouseEnabled(False, False)
@@ -49,7 +50,7 @@ class MainWindow(QMainWindow):
 		
 		# setup control timer for sending bytes and update graph
 		self.cmdTimer = QTimer(self)
-		self.cmdTimer.timeout.connect(self.move_trajectory)
+		self.cmdTimer.timeout.connect(self.move_path)
 		
 		# setup video streaming timer
 		self.frmTimer = QTimer(self)
@@ -57,6 +58,10 @@ class MainWindow(QMainWindow):
 		self.cap = cv2.VideoCapture(0)
 		self.frmTimer.start(1000/30)
 		self.captured = False
+
+		# setup signals for moving according to a list of points
+		self.finish_moving.connect(self.sketch_next_point)
+		self.point_ind = nan
 
 	def retrieve_XY(self):
 		try:
@@ -73,7 +78,7 @@ class MainWindow(QMainWindow):
 		if math.isnan(x) or math.isnan(y):
 			print("Please enter X,Y values")
 			return 
-		self.generate_trajectory(x,y)
+		self.generate_path(x,y)
 		
 	def btnConnect_clicked(self):
 		if not self.ser_flag:
@@ -94,17 +99,17 @@ class MainWindow(QMainWindow):
 			self.btnConnect.setText('Connect')
 
 	def grpPlot_clicked(self,evt):
-		print ("clicked")
+		# print ("clicked")
 		mousePoint = evt.scenePos()
 		# print(mousePoint)
 		x = (mousePoint.x()-40)/(600-40)*2*xlim-xlim	# 40 px margin
 		y = ylim-mousePoint.y()/(300-20)*ylim	# 20 px margin
-		print (x,y)
+		# print (x,y)
 		# update GUI
 		self.txtPosX.setText("{:10d}".format(int(x)))
 		self.txtPosY.setText("{:10d}".format(int(y)))
-		# btnStart_clicked
-		self.btnStart_clicked()
+		# generate path 
+		self.generate_path(x,y)
 
 	def timer_timeout(self):
 		portInfo = serial.tools.list_ports.comports()
@@ -115,23 +120,23 @@ class MainWindow(QMainWindow):
 		self.cmbPorts.addItems([portInfo[i].name for i in range(size(portInfo))])
 		self.ser_port = '/dev/' + str(self.cmbPorts.currentText())
 
-	def generate_trajectory(self,x,y):
+	def generate_path(self,x,y):
 		increment = 1 
 		dx = x- self.x0
 		dy = y- self.y0
 		c = sqrt(dx**2+dy**2)
 		self.steps = int(c/increment)
-		self.ind = 0
+		self.step_ind = 0
 		self.dx = dx/self.steps
 		self.dy = dy/self.steps
 		self.cmdTimer.start(10)
 
-	def move_trajectory(self):
+	def move_path(self):
 		# target positions
 		tx = self.x0+self.dx
 		ty = self.y0+self.dy
 		degLeft,degRight,servoLeft,servoRight = inv_kinematics(tx,ty)
-		print (servoLeft, servoRight)
+		# print (servoLeft, servoRight)
 
 		# check if solution is valid
 		if math.isnan(servoLeft) or math.isnan(servoRight):
@@ -152,9 +157,11 @@ class MainWindow(QMainWindow):
 			# update plot
 			self.update_plot(degLeft,degRight,tx,ty)	
 		# increase current index
-		self.ind += 1
-		if self.ind == self.steps:
+		self.step_ind += 1
+		if self.step_ind == self.steps:
 			self.cmdTimer.stop()
+			if not math.isnan(self.point_ind):
+				self.finish_moving.emit()
 	
 	def send_command(self,servoLeft,servoRight):
 		# convert double to int
@@ -165,7 +172,7 @@ class MainWindow(QMainWindow):
 		servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
 		servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
 		self.set_end_byte(servoLeft_bytes, servoRight_bytes)
-		print(self.startByte, servoLeft_bytes, servoRight_bytes, self.endByte)
+		# print(self.startByte, servoLeft_bytes, servoRight_bytes, self.endByte)
 		
 		# send command to arduino
 		if self.ser_flag:
@@ -195,12 +202,9 @@ class MainWindow(QMainWindow):
 		y = [O1Y,JLY,ty,JRY,O2Y]
 		self.grpPlot.clear()
 		self.grpPlot.plot(x,y)
-		boundX = [-40,-40,40,40,-40]
-		boundY = [20,80,80,20,20]
+		boundX = [boundXLeft,boundXLeft,boundXRight,boundXRight,boundXLeft]
+		boundY = [boundYDown,boundYUp,boundYUp,boundYDown,boundYDown]
 		self.grpPlot.plot(boundX,boundY)
-
-	def plot_mouseclick(self):
-		print ("mouse clicked")
 
 	def update_frame(self):
 		ret, self.frame = self.cap.read()
@@ -239,8 +243,9 @@ class MainWindow(QMainWindow):
 				dist = sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
 				if (dist < 20):
 					continue
-				sp.append(pt1)
-				tp.append(pt2)
+				sp.append((pt1[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/240*(boundYUp-boundYDown)+boundYUp))
+				tp.append((pt2[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/240*(boundYUp-boundYDown)+boundYUp))
+				#tp.append((pt2[0]/320*80,pt2[1]/240*60))
 				cv2.line(image,pt1,pt2,(0,0,255))
 				#cv2.imshow("LVD",image)
 				#cv2.waitKey(0)
@@ -249,6 +254,7 @@ class MainWindow(QMainWindow):
 			# flip flag
 			self.captured = True
 			self.btnCapture.setText("Reset")
+			# sketch the lines
 			self.sketch_image(sp,tp)
 		else:
 			self.cap = cv2.VideoCapture(0)
@@ -257,8 +263,27 @@ class MainWindow(QMainWindow):
 			self.btnCapture.setText("Capture")
 	
 	def sketch_image(self,start,target):
-		print ("sketch image")
-			
+		self.point_ind = 0 
+		self.lift = True
+		self.start = start
+		self.target = target
+		print (start)
+		# input("press enter to continue")
+		self.sketch_next_point()
+	
+	def sketch_next_point(self):
+		if self.lift == True:	# generate traj for start point, lift arms
+			pt = self.start[self.point_ind]
+			print ("lift")
+		elif self.lift == False:	# generate traj for target point, lower arms
+			pt = self.target[self.point_ind]
+			print ("down")
+		self.generate_path(pt[0],pt[1])
+		# increase index to next point
+		self.point_ind += 1
+		if self.point_ind >= len(self.start):
+			self.point_ind = nan
+			print ("lift")
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
