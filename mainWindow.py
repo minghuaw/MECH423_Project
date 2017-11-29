@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
 
 		# set initial position
 		self.x0 = 0
-		self.y0 = 50 
+		self.y0 = 50
 
 		# setup plot
 		self.grpPlot.setXRange(-xlim,xlim)
