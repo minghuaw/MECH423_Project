@@ -76,6 +76,7 @@ class MainWindow(QMainWindow):
 			return 
 		# self.generate_path(x,y)
 		self.path_worker.generate_sig.emit(x,y)
+
 	def btnConnect_clicked(self):
 		self.path_worker.serial_sig.emit()
 		if not self.path_worker.ser_flag:
@@ -89,6 +90,7 @@ class MainWindow(QMainWindow):
 		width,height = image.shape[:2]
 		image = cv2.resize(image,(int(height/width*240),240),interpolation=cv2.INTER_CUBIC)
 		self.show_image(image)
+		self.process_image(image)
 
 	def grpPlot_clicked(self,evt):
 		# print ("clicked")
@@ -217,61 +219,57 @@ class MainWindow(QMainWindow):
 			# stop video capture
 			self.frmTimer.stop()
 			self.cap.release()
-			kernel = ones((5,5),float32)/25
-			filtered = cv2.filter2D(self.frame,-1,kernel)
-			gray = cv2.cvtColor(filtered,cv2.COLOR_BGR2GRAY)
-			# create empty image
-			height, width = gray.shape
-			image = zeros((height,width,3),uint8)
-			#Create default parametrization LSD
-			lsd = cv2.createLineSegmentDetector(0)
-			lines = lsd.detect(gray)[0]
-			sp = [] # starting points
-			tp = [] # target points
-			# iterate through lines
-			for line in lines:
-				pts = line[0]
-				pt1 = (int(pts[0]),int(pts[1]))
-				pt2 = (int(pts[2]),int(pts[3]))
-				dist = sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
-				if (dist < 20):
-					continue
-
-				pt1_mm = [pt1[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/240*(boundYUp-boundYDown)+boundYUp]
-				pt2_mm = [pt2[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/240*(boundYUp-boundYDown)+boundYUp]
-				# if (pt1_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-				#	pt1_mm[0] = -37
-				# if (pt1_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-				#	pt1_mm[0] = 37
-				# if (pt2_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-				#	pt2_mm[0] = -37
-				# if (pt2_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-				#	pt2_mm[0] = 37
-				sp.append(pt1_mm)
-				tp.append(pt2_mm)
-				self.c3 = self.grpPlot.plot(([pt1_mm[0],pt2_mm[0]]),([pt1_mm[1],pt2_mm[1]]))
-				# show processed image
-				cv2.line(image,pt1,pt2,(0,0,255))
+			self.process_image(self.frame)
 			self.show_image(self.frame)
 			# flip flag
 			self.captured = "Reset" 
 			self.btnCapture.setText(self.captured)
-			# sketch the lines
-			self.path_worker.sketch_sig.emit(sp,tp)
 		else:
 			self.captured = "Camera"
 			self.btnCapture.setText(self.captured)
 			self.video.clear()
 			self.c3.clear()	
-	# def sketch_image(self,start,target):
-	#	self.point_ind = 0 
-	#	self.lift = True
-	#	self.start = start
-	#	self.target = target
-	#	print (start)
-	#	# input("press enter to continue")
-	#	self.sketch_next_point()
-	# 
+
+	def process_image(self,image):
+		kernel = ones((5,5),float32)/25
+		filtered = cv2.filter2D(image,-1,kernel)
+		gray = cv2.cvtColor(filtered,cv2.COLOR_BGR2GRAY)
+		# create empty image
+		height, width = gray.shape
+		image = zeros((height,width,3),uint8)
+		#Create default parametrization LSD
+		lsd = cv2.createLineSegmentDetector(0)
+		lines = lsd.detect(gray)[0]
+		sp = [] # starting points
+		tp = [] # target points
+		# iterate through lines
+		for line in lines:
+			pts = line[0]
+			pt1 = (int(pts[0]),int(pts[1]))
+			pt2 = (int(pts[2]),int(pts[3]))
+			dist = sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
+			if (dist < 20):
+				continue
+
+			pt1_mm = [pt1[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/240*(boundYUp-boundYDown)+boundYUp]
+			pt2_mm = [pt2[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/240*(boundYUp-boundYDown)+boundYUp]
+			# if (pt1_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+			#	pt1_mm[0] = -37
+			# if (pt1_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+			#	pt1_mm[0] = 37
+			# if (pt2_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+			#	pt2_mm[0] = -37
+			# if (pt2_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+			#	pt2_mm[0] = 37
+			sp.append(pt1_mm)
+			tp.append(pt2_mm)
+			self.c3 = self.grpPlot.plot(([pt1_mm[0],pt2_mm[0]]),([pt1_mm[1],pt2_mm[1]]))
+			## show processed image
+			#cv2.line(image,pt1,pt2,(0,0,255))
+
+		# sketch the lines
+		self.path_worker.sketch_sig.emit(sp,tp)
+
 	# def sketch_next_point(self):
 	#	if self.lift == True:	# generate traj for start point, lift arms
 	#		pt = self.start[self.point_ind]
