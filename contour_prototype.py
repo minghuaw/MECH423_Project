@@ -27,9 +27,9 @@ while (True):
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     for (x, y, w, h) in faces:
         x -= offset
-        y -= 2*offset
+        y -= (int)(2.5*offset)
         w += 2*offset
-        h += 3*offset
+        h += (int)(3.5*offset)
         cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
         roi_gray = gray[y:y + h, x:x + w]
         roi_color = blank[y:y + h, x:x + w]
@@ -53,7 +53,7 @@ while (True):
     # filter out short contours and plot
     canvas_contours = list()
     for cnt in contours:
-        if cv2.contourArea(cnt)>100 and cv2.arcLength(cnt,True) > 500:
+        if cv2.contourArea(cnt)>70 and cv2.arcLength(cnt,True) > 400:
             cv2.drawContours(blank, [cnt], 0, (0, 255, 0), 3)
             canvas_contours.append(cnt)
 

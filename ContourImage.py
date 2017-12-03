@@ -4,9 +4,8 @@ import numpy as np
 class ContourImage(object):
     def __init__(self):
         '''
-        initialize opencv VideoCapture
+        initialize opencv
         '''
-        self.cap = cv2.VideoCapture(0)
         self.face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
     def __del__(self):
@@ -17,25 +16,35 @@ class ContourImage(object):
         :return:
         '''
         self.cap.release()
-        cv2.destroyAllWindows()
+        #cv2.destroyAllWindows()
 
-    def getContours(self, area = 100, length = 500):
+    def openCam(self):
         '''
-        Obtain contours.
-        Contours outside face recognition roi is filtered by
-        both area and length
-        :param area: area threshold (default=100), contour area smaller than this will be filtered
-        :param length: length threshold (default=500)
-        :return: (frame, edge, contours): original frame, original canny edge detection image, final contours
+        open camera
         '''
-        ret, frame = self.cap.read()
+        self.cap = cv2.VideoCapture(0)
+
+    def closeCam(self):
+        self.cap.release()
+
+    def returnFrame(self):
+        ret,self.frame = self.cap.read()
+        return self.frame
+
+    def getContours(self,img):
+        '''
+        displays contours
+        :return:
+        '''
+        
+        frame = img 
+        #ret, frame = self.cap.read()
         kernel = np.ones((5, 5), np.uint8)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
         # cannyedge detection
         edge = cv2.Canny(gray, 30, 150)
-        orig_edge = edge.copy() # copy by value
         # cv2.imshow("canny edge", edge)
 
         # set up blank images
@@ -51,9 +60,9 @@ class ContourImage(object):
         faces = self.face_cascade.detectMultiScale(gray, 1.3, 5)
         for (x, y, w, h) in faces:
             x -= offset
-            y -= 2 * offset
+            y -= (int)(2.5 * offset)
             w += 2 * offset
-            h += 3 * offset
+            h += (int)(3.5 * offset)
             cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
             roi_gray = gray[y:y + h, x:x + w]
             roi_color = blank[y:y + h, x:x + w]
@@ -65,6 +74,9 @@ class ContourImage(object):
                 portrait[y:y + h, x:x + w] = tmp
                 edge[y:y + h, x:x + w] = np.zeros((h, w))
 
+            # img, contours, hierarchy = cv2.findContours(
+            #     portrait, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
         # find contour outside portrait
         img, contours, hierarchy = cv2.findContours(
             edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -72,7 +84,7 @@ class ContourImage(object):
         # filter out short contours and plot
         canvas_contours = list()
         for cnt in contours:
-            if cv2.contourArea(cnt) > area and cv2.arcLength(cnt, True) > length:
+            if cv2.contourArea(cnt) > 70 and cv2.arcLength(cnt, True) > 400:
                 cv2.drawContours(blank, [cnt], 0, (0, 255, 0), 3)
                 canvas_contours.append(cnt)
 
@@ -92,5 +104,6 @@ class ContourImage(object):
         for cnt in merged_contours:
             cv2.drawContours(merged_img, [cnt], 0, (0, 255, 0), 3)
         # cv2.imshow('merged contours', merged_img)
+        # print(len(merged_contours))
 
-        return (frame, orig_edge, merged_contours)
+        return (frame, edge, merged_img, merged_contours)
