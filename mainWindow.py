@@ -111,82 +111,6 @@ class MainWindow(QMainWindow):
 		self.cmbPorts.addItems([portInfo[i].name for i in range(size(portInfo))])
 		self.ser_port = '/dev/' + str(self.cmbPorts.currentText())
 
-	# def generate_path(self,x,y):
-	#	increment = 1 
-	#	dx = x- self.x0
-	#	dy = y- self.y0
-	#	c = sqrt(dx**2+dy**2)
-	#	self.steps = int(c/increment)
-	#	self.step_ind = 0
-	#	self.dx = dx/self.steps
-	#	self.dy = dy/self.steps
-	#	self.cmdTimer.start(10)
-
-	# def move_path(self):
-	#	# target positions
-	#	tx = self.x0+self.dx
-	#	ty = self.y0+self.dy
-	#	degLeft,degRight,servoLeft,servoRight = inv_kinematics(tx,ty)
-	#	# print (servoLeft, servoRight)
-
-	#	# check if solution is valid
-	#	if math.isnan(servoLeft) or math.isnan(servoRight):
-	#		print("Position cannot be reached")
-	#		self.cmdTimer.stop()	
-	#	else:
-	#		# update current values
-	#		self.x0 = tx
-	#		self.y0 = ty
-	#		print (self.x0,self.y0)
-	#		
-	#		# send command to arduino			
-	#		self.send_command(servoLeft,servoRight)	
-
-	#		# update GUI
-	#		self.txtServoLeft.setText("{:10.2f}".format(degLeft))
-	#		self.txtServoRight.setText("{:10.2f}".format(degRight))
-	#		# update plot
-	#		self.update_plot(degLeft,degRight,tx,ty)	
-	#	# increase current index
-	#	self.step_ind += 1
-	#	if self.step_ind == self.steps:
-	#		self.cmdTimer.stop()
-	#		if not math.isnan(self.point_ind):
-	#			self.finish_moving.emit()
-	# 
-	# def send_command(self,servoLeft,servoRight):
-	#	# convert double to int
-	#	servoLeft = int(servoLeft)
-	#	servoRight = int(servoRight)
-	#		
-	#	# Create four bytes from the integer 
-	#	servoLeft_bytes = servoLeft.to_bytes(2, byteorder='big', signed=False)
-	#	servoRight_bytes = servoRight.to_bytes(2, byteorder='big', signed=False)
-	#	self.set_end_byte(servoLeft_bytes, servoRight_bytes)
-	#	# print(self.startByte, servoLeft_bytes, servoRight_bytes, self.endByte)
-	#	
-	#	# send command to arduino
-	#	if self.ser_flag:
-	#		self.ser.write(self.startByte)
-	#		self.ser.write(servoLeft_bytes)
-	#		self.ser.write(servoRight_bytes)
-	#		self.ser.write(self.endByte)
-	#	else: 
-	#		print("Arduino cannot be found")
-
-	# def set_end_byte(self, leftBytes, rightBytes):
-	#	high, low = bytes(leftBytes)
-	#	if low == 255:
-	#		self.endByte = self.endByte|0x01
-	#	if high == 255:
-	#		self.endByte = self.endByte|0x02
-
-	#	high, low = bytes(rightBytes)
-	#	if low == 255:
-	#		self.endByte = self.endByte|0x10
-	#	if high == 255:
-	#		self.endByte = self.endByte|0x20
-			
 	def update_plot(self,degLeft,degRight,tx,ty):
 		JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
 		x = [O1X,JLX,tx,JRX,O2X]
@@ -200,7 +124,8 @@ class MainWindow(QMainWindow):
 
 	def update_frame(self):
 		ret, self.frame = self.cap.read()
-		self.frame = cv2.resize(self.frame,(320,240),interpolation=cv2.INTER_CUBIC)
+		roi = self.frame[:480,(320-180):(320+180)]
+		self.frame = cv2.resize(roi,(480,640),interpolation=cv2.INTER_CUBIC)
 		self.show_image(self.frame)
 
 	def show_image(self,img):
@@ -221,16 +146,21 @@ class MainWindow(QMainWindow):
 			self.cap.release()
 			self.process_image(self.frame)
 			self.show_image(self.frame)
-			# flip flag
 			self.captured = "Reset" 
 			self.btnCapture.setText(self.captured)
 		else:
+			for c in self.c3:
+				c.clear()	
+			self.path_worker.point_ind = nan
 			self.captured = "Camera"
 			self.btnCapture.setText(self.captured)
 			self.video.clear()
-			self.c3.clear()	
+			self.path_worker.cmdTimer.stop()
 
 	def process_image(self,image):
+		# rotate image by 90 degrees
+		image = cv2.transpose(image)
+		
 		kernel = ones((5,5),float32)/25
 		filtered = cv2.filter2D(image,-1,kernel)
 		gray = cv2.cvtColor(filtered,cv2.COLOR_BGR2GRAY)
@@ -243,6 +173,7 @@ class MainWindow(QMainWindow):
 		sp = [] # starting points
 		tp = [] # target points
 		# iterate through lines
+		self.c3 = []
 		for line in lines:
 			pts = line[0]
 			pt1 = (int(pts[0]),int(pts[1]))
@@ -251,8 +182,8 @@ class MainWindow(QMainWindow):
 			if (dist < 20):
 				continue
 
-			pt1_mm = [pt1[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/240*(boundYUp-boundYDown)+boundYUp]
-			pt2_mm = [pt2[0]/320*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/240*(boundYUp-boundYDown)+boundYUp]
+			pt1_mm = [pt1[0]/640*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/480*(boundYUp-boundYDown)+boundYUp]
+			pt2_mm = [pt2[0]/640*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/480*(boundYUp-boundYDown)+boundYUp]
 			# if (pt1_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
 			#	pt1_mm[0] = -37
 			# if (pt1_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
@@ -263,7 +194,7 @@ class MainWindow(QMainWindow):
 			#	pt2_mm[0] = 37
 			sp.append(pt1_mm)
 			tp.append(pt2_mm)
-			self.c3 = self.grpPlot.plot(([pt1_mm[0],pt2_mm[0]]),([pt1_mm[1],pt2_mm[1]]))
+			self.c3.append(self.grpPlot.plot(([pt1_mm[0],pt2_mm[0]]),([pt1_mm[1],pt2_mm[1]])))
 			## show processed image
 			#cv2.line(image,pt1,pt2,(0,0,255))
 

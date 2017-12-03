@@ -29,8 +29,8 @@ class PathWorker(QObject):
         self.y0 = sy
 
         # set servo to inital position
-        degLeft, degRight, servoLeft, servoRight = inv_kinematics(self.x0, self.y0)
-        self.send_command(servoLeft, servoRight)
+        degLeft, degRight, self.servoLeft, self.servoRight = inv_kinematics(self.x0, self.y0)
+        self.send_command(self.servoLeft, self.servoRight)
 
         # setup control timer for sending bytes and update graph
         self.cmdTimer = QTimer()
@@ -105,7 +105,7 @@ class PathWorker(QObject):
 
     def sketch_next_point(self):
         print(self.point_ind, len(self.start))
-        if self.point_ind >= len(self.start):
+        if self.point_ind >= len(self.start) or self.point_ind==nan:
             print("finish sketching")
             self.point_ind = nan
             return
