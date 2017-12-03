@@ -21,9 +21,10 @@ def main():
 			cv2.drawContours(contour_canvas, [cnt],  0, (0, 255, 0), 3)
 
 			if cv2.waitKey(0) & 0xFF == ord('n'):
-				#cv2.polylines(point_canvas,[pixelpoints],True,(0,255,255))
+				if cv2.contourArea(cnt) > 10:
+					cv2.polylines(point_canvas,[cnt],True,(0,255,255))
+					cv2.imshow('points', point_canvas)
 				cv2.imshow('contours', contour_canvas)
-				#cv2.imshow('points', point_canvas)
 			else:
 				break
 		if cv2.waitKey(0) & 0xFF == ord('q'):
