@@ -3,6 +3,7 @@
 
 from __init__ import *
 from PathWorker import PathWorker
+from ContourImage import ContourImage
 
 class MainWindow(QMainWindow):
 	# finish_moving = pyqtSignal()
@@ -58,6 +59,9 @@ class MainWindow(QMainWindow):
 		## move woker to thread
 		self.path_worker.moveToThread(self.thread)
 		self.thread.start()
+			
+		# setup contour detector
+		self.contourImage = ContourImage()
 
 	def retrieve_XY(self):
 		try:
@@ -123,7 +127,7 @@ class MainWindow(QMainWindow):
 		self.txtServoRight.setText(right)
 
 	def update_frame(self):
-		ret, self.frame = self.cap.read()
+		self.frame = self.contourImage.returnFrame()
 		roi = self.frame[:480,(320-180):(320+180)]
 		self.frame = cv2.resize(roi,(480,640),interpolation=cv2.INTER_CUBIC)
 		self.show_image(self.frame)
@@ -136,16 +140,21 @@ class MainWindow(QMainWindow):
 
 	def btnCapture_clicked(self):
 		if self.captured == "Camera":
-			self.cap = cv2.VideoCapture(0)
+			self.contourImage.openCam()
+			#self.cap = cv2.VideoCapture(0)
 			self.frmTimer.start(1000/30)
 			self.captured = "Capture"
 			self.btnCapture.setText(self.captured)
 		elif self.captured == "Capture":
 			# stop video capture
 			self.frmTimer.stop()
-			self.cap.release()
-			self.process_image(self.frame)
-			self.show_image(self.frame)
+			#self.cap.release()
+			#self.process_image(self.frame)
+			#self.show_image(self.frame)
+			self.contourImage.closeCam()
+			frame, edge, contour_img, contours = self.contourImage.getContours(self.frame)
+			self.show_image(contour_img)
+			self.draw_contours(contours)
 			self.captured = "Reset" 
 			self.btnCapture.setText(self.captured)
 		else:
@@ -157,49 +166,53 @@ class MainWindow(QMainWindow):
 			self.video.clear()
 			self.path_worker.cmdTimer.stop()
 
-	def process_image(self,image):
-		# rotate image by 90 degrees
-		image = cv2.transpose(image)
-		
-		kernel = ones((5,5),float32)/25
-		filtered = cv2.filter2D(image,-1,kernel)
-		gray = cv2.cvtColor(filtered,cv2.COLOR_BGR2GRAY)
-		# create empty image
-		height, width = gray.shape
-		image = zeros((height,width,3),uint8)
-		#Create default parametrization LSD
-		lsd = cv2.createLineSegmentDetector(0)
-		lines = lsd.detect(gray)[0]
-		sp = [] # starting points
-		tp = [] # target points
-		# iterate through lines
-		self.c3 = []
-		for line in lines:
-			pts = line[0]
-			pt1 = (int(pts[0]),int(pts[1]))
-			pt2 = (int(pts[2]),int(pts[3]))
-			dist = sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
-			if (dist < 20):
-				continue
+	def draw_contours(self,contours):
+		for cnt in contours:
+			print ("drawing")
 
-			pt1_mm = [pt1[0]/640*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/480*(boundYUp-boundYDown)+boundYUp]
-			pt2_mm = [pt2[0]/640*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/480*(boundYUp-boundYDown)+boundYUp]
-			# if (pt1_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-			#	pt1_mm[0] = -37
-			# if (pt1_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-			#	pt1_mm[0] = 37
-			# if (pt2_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-			#	pt2_mm[0] = -37
-			# if (pt2_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-			#	pt2_mm[0] = 37
-			sp.append(pt1_mm)
-			tp.append(pt2_mm)
-			self.c3.append(self.grpPlot.plot(([pt1_mm[0],pt2_mm[0]]),([pt1_mm[1],pt2_mm[1]])))
-			## show processed image
-			#cv2.line(image,pt1,pt2,(0,0,255))
+	# def process_image(self,image):
+	# 	# rotate image by 90 degrees
+	# 	image = cv2.transpose(image)
+	# 	
+	# 	kernel = ones((5,5),float32)/25
+	# 	filtered = cv2.filter2D(image,-1,kernel)
+	# 	gray = cv2.cvtColor(filtered,cv2.COLOR_BGR2GRAY)
+	# 	# create empty image
+	# 	height, width = gray.shape
+	# 	image = zeros((height,width,3),uint8)
+	# 	#Create default parametrization LSD
+	# 	lsd = cv2.createLineSegmentDetector(0)
+	# 	lines = lsd.detect(gray)[0]
+	# 	sp = [] # starting points
+	# 	tp = [] # target points
+	# 	# iterate through lines
+	# 	self.c3 = []
+	# 	for line in lines:
+	# 		pts = line[0]
+	# 		pt1 = (int(pts[0]),int(pts[1]))
+	# 		pt2 = (int(pts[2]),int(pts[3]))
+	# 		dist = sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
+	# 		if (dist < 20):
+	# 			continue
 
-		# sketch the lines
-		self.path_worker.sketch_sig.emit(sp,tp)
+	# 		pt1_mm = [pt1[0]/640*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/480*(boundYUp-boundYDown)+boundYUp]
+	# 		pt2_mm = [pt2[0]/640*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/480*(boundYUp-boundYDown)+boundYUp]
+	# 		# if (pt1_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+	# 		#	pt1_mm[0] = -37
+	# 		# if (pt1_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+	# 		#	pt1_mm[0] = 37
+	# 		# if (pt2_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+	# 		#	pt2_mm[0] = -37
+	# 		# if (pt2_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+	# 		#	pt2_mm[0] = 37
+	# 		sp.append(pt1_mm)
+	# 		tp.append(pt2_mm)
+	# 		self.c3.append(self.grpPlot.plot(([pt1_mm[0],pt2_mm[0]]),([pt1_mm[1],pt2_mm[1]])))
+	# 		## show processed image
+	# 		#cv2.line(image,pt1,pt2,(0,0,255))
+
+	# 	# sketch the lines
+	# 	self.path_worker.sketch_sig.emit(sp,tp)
 
 	# def sketch_next_point(self):
 	#	if self.lift == True:	# generate traj for start point, lift arms
