@@ -177,6 +177,7 @@ class MainWindow(QMainWindow):
 
 	def draw_contours(self,contours):
 		self.c3 = []
+		path = []
 		for cnt in contours:
 			# iterate through contours 
 			pts = asarray(cnt[:,0])
@@ -184,6 +185,8 @@ class MainWindow(QMainWindow):
 			pts_y_mm = -pts[:,1]/480*(boundYUp-boundYDown)+boundYUp
 			pts_mm = stack((pts_x_mm,pts_y_mm),axis=-1)
 			self.c3.append(self.grpPlot.plot(pts_x_mm,pts_y_mm))
+			path.append(pts_mm)
+		self.path_worker.sketch_sig.emit(path)
 
 	# def process_image(self,image):
 	#	# rotate image by 90 degrees
