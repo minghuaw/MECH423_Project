@@ -12,7 +12,6 @@ def main():
         cv2.imshow('frame',frame)
         cv2.imshow('edge',edge)
 
-        print(len(contours))
         for cnt in contours:
             cv2.drawContours(contour_canvas, [cnt],  0, (0, 255, 0), 3)
 

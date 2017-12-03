@@ -4,7 +4,7 @@ import numpy as np
 class ContourImage(object):
     def __init__(self):
         '''
-        initialize opencv
+        initialize opencv VideoCapture
         '''
         self.cap = cv2.VideoCapture(0)
         self.face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
@@ -19,10 +19,14 @@ class ContourImage(object):
         self.cap.release()
         cv2.destroyAllWindows()
 
-    def getContours(self):
+    def getContours(self, area = 100, length = 500):
         '''
-        displays contours
-        :return:
+        Obtain contours.
+        Contours outside face recognition roi is filtered by
+        both area and length
+        :param area: area threshold (default=100), contour area smaller than this will be filtered
+        :param length: length threshold (default=500)
+        :return: (frame, edge, contours): original frame, original canny edge detection image, final contours
         '''
         ret, frame = self.cap.read()
         kernel = np.ones((5, 5), np.uint8)
@@ -31,6 +35,7 @@ class ContourImage(object):
 
         # cannyedge detection
         edge = cv2.Canny(gray, 30, 150)
+        orig_edge = edge.copy() # copy by value
         # cv2.imshow("canny edge", edge)
 
         # set up blank images
@@ -60,9 +65,6 @@ class ContourImage(object):
                 portrait[y:y + h, x:x + w] = tmp
                 edge[y:y + h, x:x + w] = np.zeros((h, w))
 
-            # img, contours, hierarchy = cv2.findContours(
-            #     portrait, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
         # find contour outside portrait
         img, contours, hierarchy = cv2.findContours(
             edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -70,7 +72,7 @@ class ContourImage(object):
         # filter out short contours and plot
         canvas_contours = list()
         for cnt in contours:
-            if cv2.contourArea(cnt) > 100 and cv2.arcLength(cnt, True) > 500:
+            if cv2.contourArea(cnt) > area and cv2.arcLength(cnt, True) > length:
                 cv2.drawContours(blank, [cnt], 0, (0, 255, 0), 3)
                 canvas_contours.append(cnt)
 
@@ -90,6 +92,5 @@ class ContourImage(object):
         for cnt in merged_contours:
             cv2.drawContours(merged_img, [cnt], 0, (0, 255, 0), 3)
         # cv2.imshow('merged contours', merged_img)
-        # print(len(merged_contours))
 
-        return (frame, edge, merged_contours)
+        return (frame, orig_edge, merged_contours)
