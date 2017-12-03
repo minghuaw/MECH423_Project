@@ -130,7 +130,9 @@ class MainWindow(QMainWindow):
 		self.frame = self.contourImage.returnFrame()
 		roi = self.frame[:480,(320-180):(320+180)]
 		self.frame = cv2.resize(roi,(480,640),interpolation=cv2.INTER_CUBIC)
-		self.show_image(self.frame)
+		# flip to get mirrored effect
+		flipped = cv2.flip(self.frame,flipCode=1)
+		self.show_image(flipped)
 
 	def show_image(self,img):
 		# convert opencv matrix to Qimage
@@ -145,6 +147,7 @@ class MainWindow(QMainWindow):
 			self.frmTimer.start(1000/30)
 			self.captured = "Capture"
 			self.btnCapture.setText(self.captured)
+
 		elif self.captured == "Capture":
 			# stop video capture
 			self.frmTimer.stop()
@@ -152,8 +155,14 @@ class MainWindow(QMainWindow):
 			#self.process_image(self.frame)
 			#self.show_image(self.frame)
 			self.contourImage.closeCam()
-			frame, edge, contour_img, contours = self.contourImage.getContours(self.frame)
-			self.show_image(contour_img)
+			
+			# rotate by 90 degrees
+			frame = cv2.transpose(self.frame)
+			frame, edge, contour_img, contours = self.contourImage.getContours(frame)
+			# rotate back and flip to get right image
+			contour_img_transposed = cv2.transpose(contour_img)
+			contour_img_flipped = cv2.flip(contour_img_transposed,flipCode=1)
+			self.show_image(contour_img_flipped)
 			self.draw_contours(contours)
 			self.captured = "Reset" 
 			self.btnCapture.setText(self.captured)
@@ -167,52 +176,58 @@ class MainWindow(QMainWindow):
 			self.path_worker.cmdTimer.stop()
 
 	def draw_contours(self,contours):
+		self.c3 = []
 		for cnt in contours:
-			print ("drawing")
+			# iterate through contours 
+			pts = asarray(cnt[:,0])
+			pts_x_mm = pts[:,0]/640*(boundXRight-boundXLeft)+boundXLeft
+			pts_y_mm = -pts[:,1]/480*(boundYUp-boundYDown)+boundYUp
+			pts_mm = stack((pts_x_mm,pts_y_mm),axis=-1)
+			self.c3.append(self.grpPlot.plot(pts_x_mm,pts_y_mm))
 
 	# def process_image(self,image):
-	# 	# rotate image by 90 degrees
-	# 	image = cv2.transpose(image)
-	# 	
-	# 	kernel = ones((5,5),float32)/25
-	# 	filtered = cv2.filter2D(image,-1,kernel)
-	# 	gray = cv2.cvtColor(filtered,cv2.COLOR_BGR2GRAY)
-	# 	# create empty image
-	# 	height, width = gray.shape
-	# 	image = zeros((height,width,3),uint8)
-	# 	#Create default parametrization LSD
-	# 	lsd = cv2.createLineSegmentDetector(0)
-	# 	lines = lsd.detect(gray)[0]
-	# 	sp = [] # starting points
-	# 	tp = [] # target points
-	# 	# iterate through lines
-	# 	self.c3 = []
-	# 	for line in lines:
-	# 		pts = line[0]
-	# 		pt1 = (int(pts[0]),int(pts[1]))
-	# 		pt2 = (int(pts[2]),int(pts[3]))
-	# 		dist = sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
-	# 		if (dist < 20):
-	# 			continue
+	#	# rotate image by 90 degrees
+	#	image = cv2.transpose(image)
+	#	
+	#	kernel = ones((5,5),float32)/25
+	#	filtered = cv2.filter2D(image,-1,kernel)
+	#	gray = cv2.cvtColor(filtered,cv2.COLOR_BGR2GRAY)
+	#	# create empty image
+	#	height, width = gray.shape
+	#	image = zeros((height,width,3),uint8)
+	#	#Create default parametrization LSD
+	#	lsd = cv2.createLineSegmentDetector(0)
+	#	lines = lsd.detect(gray)[0]
+	#	sp = [] # starting points
+	#	tp = [] # target points
+	#	# iterate through lines
+	#	self.c3 = []
+	#	for line in lines:
+	#		pts = line[0]
+	#		pt1 = (int(pts[0]),int(pts[1]))
+	#		pt2 = (int(pts[2]),int(pts[3]))
+	#		dist = sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
+	#		if (dist < 20):
+	#			continue
 
-	# 		pt1_mm = [pt1[0]/640*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/480*(boundYUp-boundYDown)+boundYUp]
-	# 		pt2_mm = [pt2[0]/640*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/480*(boundYUp-boundYDown)+boundYUp]
-	# 		# if (pt1_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-	# 		#	pt1_mm[0] = -37
-	# 		# if (pt1_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-	# 		#	pt1_mm[0] = 37
-	# 		# if (pt2_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-	# 		#	pt2_mm[0] = -37
-	# 		# if (pt2_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
-	# 		#	pt2_mm[0] = 37
-	# 		sp.append(pt1_mm)
-	# 		tp.append(pt2_mm)
-	# 		self.c3.append(self.grpPlot.plot(([pt1_mm[0],pt2_mm[0]]),([pt1_mm[1],pt2_mm[1]])))
-	# 		## show processed image
-	# 		#cv2.line(image,pt1,pt2,(0,0,255))
+	#		pt1_mm = [pt1[0]/640*(boundXRight-boundXLeft)+boundXLeft,-pt1[1]/480*(boundYUp-boundYDown)+boundYUp]
+	#		pt2_mm = [pt2[0]/640*(boundXRight-boundXLeft)+boundXLeft,-pt2[1]/480*(boundYUp-boundYDown)+boundYUp]
+	#		# if (pt1_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+	#		#	pt1_mm[0] = -37
+	#		# if (pt1_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+	#		#	pt1_mm[0] = 37
+	#		# if (pt2_mm[0]<-37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+	#		#	pt2_mm[0] = -37
+	#		# if (pt2_mm[0]>37 and (pt1_mm[1]>75 or pt1_mm[1]<25)):
+	#		#	pt2_mm[0] = 37
+	#		sp.append(pt1_mm)
+	#		tp.append(pt2_mm)
+	#		self.c3.append(self.grpPlot.plot(([pt1_mm[0],pt2_mm[0]]),([pt1_mm[1],pt2_mm[1]])))
+	#		## show processed image
+	#		#cv2.line(image,pt1,pt2,(0,0,255))
 
-	# 	# sketch the lines
-	# 	self.path_worker.sketch_sig.emit(sp,tp)
+	#	# sketch the lines
+	#	self.path_worker.sketch_sig.emit(sp,tp)
 
 	# def sketch_next_point(self):
 	#	if self.lift == True:	# generate traj for start point, lift arms
