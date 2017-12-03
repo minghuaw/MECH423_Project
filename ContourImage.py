@@ -54,7 +54,7 @@ class ContourImage(object):
 		height, width = edge.shape
 		blank = np.zeros([height, width, 3], dtype=np.uint8)
 		portrait_img = np.zeros([height, width, 3], dtype=np.uint8)
-		merged_img = np.zeros([height, width, 3], dtype=np.uint8)
+		merged_img = np.zeros([width, height, 3], dtype=np.uint8)
 		portrait = np.zeros((height, width), dtype=np.uint8)
 
 		img = blank
@@ -85,6 +85,7 @@ class ContourImage(object):
 		# transpose edge
 		edge = cv2.transpose(edge)
 
+
 		# find contour outside portrait
 		img, contours, hierarchy = cv2.findContours(
 			edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -97,7 +98,6 @@ class ContourImage(object):
 				canvas_contours.append(cnt)
 
 		img = blank
-		# cv2.imshow('contour_edge', img)
 
 		# transpose portrait
 		portrait = cv2.transpose(portrait)
@@ -109,12 +109,15 @@ class ContourImage(object):
 		for cnt in portrait_contours:
 			if cv2.contourArea(cnt) > 10:
 				cv2.drawContours(portrait_img, [cnt], 0, (0, 255, 0), 3)
-		# cv2.imshow('portrait contour', portrait_img)
 
 		# merge contours
 		merged_contours = canvas_contours + portrait_contours
 		for cnt in merged_contours:
 			cv2.drawContours(merged_img, [cnt], 0, (0, 255, 0), 3)
+
+		# cv2.imshow('edge transposed', edge)
+		# cv2.imshow('contour_edge', img)
+		# cv2.imshow('portrait contour', portrait_img)
 		# cv2.imshow('merged contours', merged_img)
 		print("merged contours: {}".format(len(merged_contours)))
 
