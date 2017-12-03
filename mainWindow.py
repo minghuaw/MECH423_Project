@@ -157,11 +157,15 @@ class MainWindow(QMainWindow):
 			self.contourImage.closeCam()
 			
 			# rotate by 90 degrees
-			frame = cv2.transpose(self.frame)
+			# frame = cv2.transpose(self.frame)
+			frame = self.frame
 			frame, edge, contour_img, contours = self.contourImage.getContours(frame)
+			print(len(contours))
 			# rotate back and flip to get right image
 			contour_img_transposed = cv2.transpose(contour_img)
 			contour_img_flipped = cv2.flip(contour_img_transposed,flipCode=1)
+			(w, h, _) = contour_img_flipped.shape
+			print('h:{}, w:{}'.format(h, w))
 			self.show_image(contour_img_flipped)
 			self.draw_contours(contours)
 			self.captured = "Reset" 

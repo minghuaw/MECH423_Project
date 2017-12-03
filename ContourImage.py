@@ -7,6 +7,7 @@ class ContourImage(object):
 		initialize opencv
 		'''
 		self.face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+		print("init facecascade calssifier: {}".format(self.face_cascade))
 
 	def __del__(self):
 		'''
@@ -23,6 +24,7 @@ class ContourImage(object):
 		open camera
 		'''
 		self.cap = cv2.VideoCapture(0)
+		# self.face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 	def closeCam(self):
 		self.cap.release()
@@ -33,7 +35,8 @@ class ContourImage(object):
 
 	def getContours(self,img):
 		'''
-		displays contours
+
+		:param img: non-transposed img
 		:return:
 		'''
 		
@@ -57,7 +60,9 @@ class ContourImage(object):
 		img = blank
 		offset = 20
 		# face detection
+		print(self.face_cascade.getOriginalWindowSize())
 		faces = self.face_cascade.detectMultiScale(gray, 1.3, 5)
+		print("num of faces: {}".format(len(faces)))
 		for (x, y, w, h) in faces:
 			x -= offset
 			y -= (int)(2.5 * offset)
@@ -77,6 +82,9 @@ class ContourImage(object):
 			# img, contours, hierarchy = cv2.findContours(
 			#	  portrait, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+		# transpose edge
+		edge = cv2.transpose(edge)
+
 		# find contour outside portrait
 		img, contours, hierarchy = cv2.findContours(
 			edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -91,12 +99,15 @@ class ContourImage(object):
 		img = blank
 		# cv2.imshow('contour_edge', img)
 
+		# transpose portrait
+		portrait = cv2.transpose(portrait)
+
 		# find contour inside portrait
 		img, portrait_contours, hierarchy = cv2.findContours(
 			portrait, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 		for cnt in portrait_contours:
-			if cv2.contourArea(cnt) > 10:	
+			if cv2.contourArea(cnt) > 10:
 				cv2.drawContours(portrait_img, [cnt], 0, (0, 255, 0), 3)
 		# cv2.imshow('portrait contour', portrait_img)
 
@@ -105,6 +116,6 @@ class ContourImage(object):
 		for cnt in merged_contours:
 			cv2.drawContours(merged_img, [cnt], 0, (0, 255, 0), 3)
 		# cv2.imshow('merged contours', merged_img)
-		# print(len(merged_contours))
+		print("merged contours: {}".format(len(merged_contours)))
 
 		return (frame, edge, merged_img, merged_contours)
