@@ -52,7 +52,7 @@ def inv_kinematics (x,y):
 	theta2 = -theta21 + theta22
 	deg2 = rad2deg(theta2)
 	if (deg2 > 90+deg2Off and deg2<180+deg2Off):
-		output2 = (rad2deg(theta2-pi/2)-deg2Off)/90*1200+1500
+		output2 = (rad2deg(theta2-pi/2)-deg2Off)/90*900+1500
 	elif (deg2Off <= deg2 <= 90+deg2Off):
 		output2 = (rad2deg(theta2)-deg2Off)/90*900+600
 	else:

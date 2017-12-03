@@ -41,7 +41,7 @@ class PathWorker(QObject):
 		self.point_ind = nan
 
 	def generate_path(self,x,y):
-		increment = 1
+		increment = 0.3 
 		dx = x- self.x0
 		dy = y- self.y0
 		c = sqrt(dx**2+dy**2)
