@@ -14,8 +14,8 @@ def main():
 		contour_canvas = np.zeros([height, width, 3], dtype=np.uint8)
 		point_canvas = np.zeros([height, width, 3], dtype=np.uint8)
 
-		cv2.imshow('frame',frame)
-		cv2.imshow('edge',edge)
+		# cv2.imshow('frame',frame)
+		# cv2.imshow('edge',edge)
 
 		print(len(contours))
 		for cnt in contours:
@@ -29,7 +29,7 @@ def main():
 			# else:
 			# 	break
 
-		cv2.imshow('contour canvas', contour_canvas)
+		# cv2.imshow('contour canvas', contour_canvas)
 		if cv2.waitKey(0) & 0xFF == ord('q'):
 			break
 
