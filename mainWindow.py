@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
 		self.grpPlot.scene().sigMouseClicked.connect(self.grpPlot_clicked)
 		boundX = [boundXLeft,boundXLeft,boundXRight,boundXRight,boundXLeft]
 		boundY = [boundYDown,boundYUp,boundYUp,boundYDown,boundYDown]
-		self.c1 = self.grpPlot.plot(boundX,boundY)
+		self.c1 = self.grpPlot.plot(boundX,boundY,pen=pg.mkPen(cosmetic=False, width=2, color='r'))
 		self.c3 = []
 		
 		# set servo to inital position
@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
 		JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
 		x = [O1X,JLX,self.x0,JRX,O2X]
 		y = [O1Y,JLY,self.y0,JRY,O2Y]
-		self.c2 = self.grpPlot.plot(x,y)
+		self.c2 = self.grpPlot.plot(x,y,pen=pg.mkPen(cosmetic=False, width=3, color='w'))
 
 		# setup video streaming timer
 		self.frmTimer = QTimer(self)
@@ -112,7 +112,7 @@ class MainWindow(QMainWindow):
 		image = cv2.resize(image,(480,640))
 		image = cv2.flip(image,1)
 		self.show_image(image)
-		contour_image_flipped = self.process_image(image)
+		contour_image_flipped = self.process_image_withoutfilter(image)
 		self.show_image(contour_image_flipped)
 
 	def grpPlot_clicked(self,evt):
@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
 		x = [O1X,JLX,tx,JRX,O2X]
 		y = [O1Y,JLY,ty,JRY,O2Y]
 		self.c2.clear()
-		self.c2 = self.grpPlot.plot(x,y)
+		self.c2 = self.grpPlot.plot(x,y,pen=pg.mkPen(cosmetic=False, width=3.5, color='w'))
 
 	def update_angle(self,left,right):
 		self.txtServoLeft.setText(left)
@@ -208,6 +208,20 @@ class MainWindow(QMainWindow):
 
 	def process_image(self, frame):
 		frame, edge, contour_img, contours = self.contourImage.getContours(frame)
+		print(len(contours))
+		# rotate back and flip to get right image
+		contour_img_transposed = contour_img
+		contour_img_transposed = cv2.transpose(contour_img_transposed)
+		contour_img_flipped = cv2.flip(contour_img_transposed, flipCode=1)
+		# (h, w, _) = contour_img_transposed.shape
+		# print('h:{}, w:{}'.format(h, w))
+
+		self.draw_contours(contours)
+
+		return contour_img_flipped
+
+	def process_image_withoutfilter(self, frame):
+		frame, edge, contour_img, contours = self.contourImage.getContoursWithoutFilter(frame)
 		print(len(contours))
 		# rotate back and flip to get right image
 		contour_img_transposed = contour_img

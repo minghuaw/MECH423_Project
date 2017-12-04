@@ -17,7 +17,7 @@
    <widget class="QPushButton" name="btnStart">
     <property name="geometry">
      <rect>
-      <x>70</x>
+      <x>80</x>
       <y>200</y>
       <width>151</width>
       <height>31</height>
@@ -31,7 +31,7 @@
     <property name="geometry">
      <rect>
       <x>350</x>
-      <y>50</y>
+      <y>100</y>
       <width>111</width>
       <height>20</height>
      </rect>
@@ -44,7 +44,7 @@
     <property name="geometry">
      <rect>
       <x>480</x>
-      <y>50</y>
+      <y>100</y>
       <width>111</width>
       <height>21</height>
      </rect>
@@ -57,8 +57,8 @@
     <property name="geometry">
      <rect>
       <x>350</x>
-      <y>80</y>
-      <width>101</width>
+      <y>120</y>
+      <width>111</width>
       <height>31</height>
      </rect>
     </property>
@@ -67,8 +67,8 @@
     <property name="geometry">
      <rect>
       <x>480</x>
-      <y>80</y>
-      <width>101</width>
+      <y>120</y>
+      <width>111</width>
       <height>31</height>
      </rect>
     </property>
@@ -76,8 +76,8 @@
    <widget class="QPushButton" name="btnConnect">
     <property name="geometry">
      <rect>
-      <x>140</x>
-      <y>10</y>
+      <x>150</x>
+      <y>50</y>
       <width>151</width>
       <height>31</height>
      </rect>
@@ -89,8 +89,8 @@
    <widget class="QComboBox" name="cmbPorts">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>10</y>
+      <x>20</x>
+      <y>50</y>
       <width>111</width>
       <height>27</height>
      </rect>
@@ -100,7 +100,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>60</y>
+      <y>100</y>
       <width>91</width>
       <height>21</height>
      </rect>
@@ -113,7 +113,7 @@
     <property name="geometry">
      <rect>
       <x>150</x>
-      <y>60</y>
+      <y>100</y>
       <width>91</width>
       <height>21</height>
      </rect>
@@ -125,8 +125,8 @@
    <widget class="QTextEdit" name="txtPosX">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>80</y>
+      <x>20</x>
+      <y>120</y>
       <width>107</width>
       <height>31</height>
      </rect>
@@ -135,8 +135,8 @@
    <widget class="QTextEdit" name="txtPosY">
     <property name="geometry">
      <rect>
-      <x>140</x>
-      <y>80</y>
+      <x>150</x>
+      <y>120</y>
       <width>107</width>
       <height>31</height>
      </rect>
@@ -145,10 +145,10 @@
    <widget class="PlotWidget" name="grpPlot">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>300</y>
-      <width>600</width>
-      <height>300</height>
+      <x>10</x>
+      <y>280</y>
+      <width>671</width>
+      <height>371</height>
      </rect>
     </property>
     <property name="mouseTracking">
