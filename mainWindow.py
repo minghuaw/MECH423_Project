@@ -93,8 +93,11 @@ class MainWindow(QMainWindow):
 		image = cv2.imread(str(fileName[0]))
 		width,height = image.shape[:2]
 		image = cv2.resize(image,(int(height/width*240),240),interpolation=cv2.INTER_CUBIC)
+		image = cv2.resize(image,(640, 480))
+		print(image.shape)
 		self.show_image(image)
-		self.process_image(image)
+		contour_image_flipped = self.process_image(image)
+		self.show_image(contour_image_flipped)
 
 	def grpPlot_clicked(self,evt):
 		# print ("clicked")
@@ -158,17 +161,19 @@ class MainWindow(QMainWindow):
 			
 			# rotate by 90 degrees
 			# frame = cv2.transpose(self.frame)
-			frame = self.frame
-			frame, edge, contour_img, contours = self.contourImage.getContours(frame)
-			print(len(contours))
-			# rotate back and flip to get right image
-			contour_img_transposed = contour_img
-			contour_img_transposed = cv2.transpose(contour_img_transposed)
-			contour_img_flipped = cv2.flip(contour_img_transposed,flipCode=1)
-			(h, w, _) = contour_img_transposed.shape
-			print('h:{}, w:{}'.format(h, w))
+			# frame = self.frame
+			# frame, edge, contour_img, contours = self.contourImage.getContours(frame)
+			# print(len(contours))
+			# # rotate back and flip to get right image
+			# contour_img_transposed = contour_img
+			# contour_img_transposed = cv2.transpose(contour_img_transposed)
+			# contour_img_flipped = cv2.flip(contour_img_transposed,flipCode=1)
+			# (h, w, _) = contour_img_transposed.shape
+			# print('h:{}, w:{}'.format(h, w))
+
+			contour_img_flipped = self.process_image(self.frame)
 			self.show_image(contour_img_flipped)
-			self.draw_contours(contours)
+			# self.draw_contours(contours)
 			self.captured = "Reset" 
 			self.btnCapture.setText(self.captured)
 		else:
@@ -179,6 +184,20 @@ class MainWindow(QMainWindow):
 			self.btnCapture.setText(self.captured)
 			self.video.clear()
 			self.path_worker.cmdTimer.stop()
+
+	def process_image(self, frame):
+		frame, edge, contour_img, contours = self.contourImage.getContours(frame)
+		print(len(contours))
+		# rotate back and flip to get right image
+		contour_img_transposed = contour_img
+		contour_img_transposed = cv2.transpose(contour_img_transposed)
+		contour_img_flipped = cv2.flip(contour_img_transposed, flipCode=1)
+		# (h, w, _) = contour_img_transposed.shape
+		# print('h:{}, w:{}'.format(h, w))
+
+		self.draw_contours(contours)
+
+		return contour_img_flipped
 
 	def draw_contours(self,contours):
 		self.c3 = []

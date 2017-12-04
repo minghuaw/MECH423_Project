@@ -131,7 +131,7 @@ class PathWorker(QObject):
 				self.pt_ind += 1
 				self.moved_sig.emit()
 			# TODO: divide by 2 maynot work
-			elif self.pt_ind < len(self.paths[self.path_ind])/2:
+			elif self.pt_ind < len(self.paths[self.path_ind])/1:
 				pt = self.paths[self.path_ind][self.pt_ind]
 				# increase index to next point
 				self.generate_path(pt[0], pt[1])

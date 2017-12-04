@@ -27,7 +27,7 @@ while (True):
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     for (x, y, w, h) in faces:
         x -= offset
-        y -= (int)(2.5*offset)
+        y -= (int)(3.5*offset)
         w += 2*offset
         h += (int)(3.5*offset)
         cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)

@@ -65,7 +65,7 @@ class ContourImage(object):
 		print("num of faces: {}".format(len(faces)))
 		for (x, y, w, h) in faces:
 			x -= offset
-			y -= (int)(2.5 * offset)
+			y -= (int)(3.5 * offset)
 			w += 2 * offset
 			h += (int)(3.5 * offset)
 			cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
@@ -91,11 +91,11 @@ class ContourImage(object):
 			edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 		# filter out short contours and plot
-		canvas_contours = list()
+		canvas_contours_filtered = list()
 		for cnt in contours:
 			if cv2.contourArea(cnt) > 70 and cv2.arcLength(cnt, True) > 400:
 				cv2.drawContours(blank, [cnt], 0, (0, 255, 0), 3)
-				canvas_contours.append(cnt)
+				canvas_contours_filtered.append(cnt)
 
 		img = blank
 
@@ -106,12 +106,14 @@ class ContourImage(object):
 		img, portrait_contours, hierarchy = cv2.findContours(
 			portrait, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+		portrait_contours_filtered = list()
 		for cnt in portrait_contours:
 			if cv2.contourArea(cnt) > 10:
 				cv2.drawContours(portrait_img, [cnt], 0, (0, 255, 0), 3)
+				portrait_contours_filtered.append(cnt)
 
 		# merge contours
-		merged_contours = canvas_contours + portrait_contours
+		merged_contours = canvas_contours_filtered + portrait_contours_filtered
 		for cnt in merged_contours:
 			cv2.drawContours(merged_img, [cnt], 0, (0, 255, 0), 3)
 
