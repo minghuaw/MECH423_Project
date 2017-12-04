@@ -163,10 +163,13 @@ class MainWindow(QMainWindow):
 			print(len(contours))
 			# rotate back and flip to get right image
 			contour_img_transposed = cv2.transpose(contour_img)
+			cv2.imshow('t',contour_img_transposed)
 			contour_img_flipped = cv2.flip(contour_img_transposed,flipCode=1)
+			cv2.imshow('f',contour_img_flipped)
 			(w, h, _) = contour_img_flipped.shape
 			print('h:{}, w:{}'.format(h, w))
 			self.show_image(contour_img_flipped)
+			cv2.imshow('a',contour_img_flipped)
 			self.draw_contours(contours)
 			self.captured = "Reset" 
 			self.btnCapture.setText(self.captured)
