@@ -19,6 +19,7 @@ class MainWindow(QMainWindow):
 		self.btnStart.clicked.connect(self.btnStart_clicked)
 		self.btnCapture.clicked.connect(self.btnCapture_clicked)
 		self.btnLoad.clicked.connect(self.btnLoad_clicked)
+		self.btnStop.clicked.connect(self.btnStop_clicked)
 
 		# setup timer
 		self.timer = QTimer(self)
@@ -37,6 +38,8 @@ class MainWindow(QMainWindow):
 		boundX = [boundXLeft,boundXLeft,boundXRight,boundXRight,boundXLeft]
 		boundY = [boundYDown,boundYUp,boundYUp,boundYDown,boundYDown]
 		self.c1 = self.grpPlot.plot(boundX,boundY)
+		self.c3 = []
+		
 		# set servo to inital position
 		degLeft,degRight,servoLeft,servoRight = inv_kinematics(self.x0,self.y0)
 		JLX,JLY,JRX,JRY = for_kinematics(degLeft,degRight)
@@ -81,6 +84,19 @@ class MainWindow(QMainWindow):
 		# self.generate_path(x,y)
 		self.path_worker.generate_sig.emit(x,y)
 
+	def btnStop_clicked(self):
+		for c in self.c3:
+			c.clear()
+		self.path_worker.point_ind = nan
+		self.captured = "Camera"
+		self.btnCapture.setText(self.captured)
+		self.video.clear()
+		self.path_worker.cmdTimer.stop()
+		self.path_worker.liftFlag = True
+		self.path_worker.lift = 0x01
+		self.path_worker.send_command(self.path_worker.servoLeft, self.path_worker.servoRight)
+
+
 	def btnConnect_clicked(self):
 		self.path_worker.serial_sig.emit()
 		if not self.path_worker.ser_flag:
@@ -92,9 +108,9 @@ class MainWindow(QMainWindow):
 		fileName = QFileDialog.getOpenFileName(self,"Open Image","/home", "Image Files (*.png *.jpg *.bmp)");
 		image = cv2.imread(str(fileName[0]))
 		width,height = image.shape[:2]
-		image = cv2.resize(image,(int(height/width*240),240),interpolation=cv2.INTER_CUBIC)
-		image = cv2.resize(image,(640, 480))
-		print(image.shape)
+		# image = cv2.resize(image,(int(height/width*240),240),interpolation=cv2.INTER_CUBIC)
+		image = cv2.resize(image,(480,640))
+		image = cv2.flip(image,1)
 		self.show_image(image)
 		contour_image_flipped = self.process_image(image)
 		self.show_image(contour_image_flipped)
@@ -109,6 +125,11 @@ class MainWindow(QMainWindow):
 		# update GUI
 		self.txtPosX.setText("{:10d}".format(int(x)))
 		self.txtPosY.setText("{:10d}".format(int(y)))
+		
+		# lower arm
+		self.path_worker.liftFlag = False 
+		self.path_worker.lift = 0x00
+
 		# generate path 
 		self.path_worker.generate_sig.emit(x,y)
 
@@ -200,7 +221,6 @@ class MainWindow(QMainWindow):
 		return contour_img_flipped
 
 	def draw_contours(self,contours):
-		self.c3 = []
 		path = []
 		for cnt in contours:
 			# iterate through contours 
