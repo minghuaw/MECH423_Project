@@ -93,7 +93,7 @@ class MainWindow(QMainWindow):
 		self.video.clear()
 		self.path_worker.cmdTimer.stop()
 		self.path_worker.liftFlag = True
-		self.path_worker.lift = 0x01
+		self.path_worker.lift = 0x02
 		self.path_worker.send_command(self.path_worker.servoLeft, self.path_worker.servoRight)
 
 
