@@ -124,3 +124,43 @@ class ContourImage(object):
 		print("merged contours: {}".format(len(merged_contours)))
 
 		return (frame, edge, merged_img, merged_contours)
+	
+	def getContoursWithoutFilter(self,img):
+		'''
+
+		:param img: non-transposed img
+		:return:
+		'''
+		
+		frame = img 
+		#ret, frame = self.cap.read()
+		kernel = np.ones((5, 5), np.uint8)
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		blur = cv2.GaussianBlur(gray, (5, 5), 0)
+
+		# cannyedge detection
+		edge = cv2.Canny(gray, 30, 150)
+		# cv2.imshow("canny edge", edge)
+
+		# set up blank images
+		height, width = edge.shape
+		blank = np.zeros([height, width, 3], dtype=np.uint8)
+		contour_img = np.zeros([width, height, 3], dtype=np.uint8)
+
+		img = blank
+
+		# transpose edge
+		edge = cv2.transpose(edge)
+
+
+		# find contour
+		img, contours, hierarchy = cv2.findContours(
+			edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+		contours_filtered = []
+		for cnt in contours:
+			if cv2.contourArea(cnt) > 1:
+				cv2.drawContours(contour_img, [cnt], 0, (0, 255, 0), 3)
+				contours_filtered.append(cnt)
+
+		return (frame, edge, contour_img, contours)

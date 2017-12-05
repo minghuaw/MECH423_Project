@@ -66,3 +66,34 @@ def for_kinematics(deg1,deg2):
 	J2X = O2X+r1*cos(deg2rad(deg2))
 	J2Y = O2Y+r1*sin(deg2rad(deg2))
 	return J1X,J1Y,J2X,J2Y
+
+def inv_kinematics_eraser (x,y):
+	r1_ = 35
+	r2_ = 44
+	deg1Off = 60 
+	deg2Off = -10
+	# left motor
+	PA1 = sqrt((x+r3)**2+y**2)
+	PA2 = sqrt((x-r3)**2+y**2)
+	theta11 = arccos((PA1**2+r1_**2- r2_**2) / (2 * r1_ * PA1))
+	theta12 = arccos((x+r3)/PA1)
+	theta1 = theta11 + theta12
+	deg1 = rad2deg(theta1)
+	if(deg1 > 90+deg1Off and deg1<180+deg1Off):
+		output1 = (rad2deg(theta1-pi/2)-deg1Off)/90*900+1600
+	elif(deg1Off<=deg1<=90+deg1Off):
+		output1 = (rad2deg(theta1)-deg1Off)/90*900+700
+	else:
+		output1 = nan	# set software limit
+	# right motor
+	theta21 = arccos((PA2**2 + r1_**2 - r2_**2) / (2 * r1_ * PA2))
+	theta22 = arccos((x-r3)/PA2)
+	theta2 = -theta21 + theta22
+	deg2 = rad2deg(theta2)
+	if (deg2 > 90+deg2Off and deg2<180+deg2Off):
+		output2 = (rad2deg(theta2-pi/2)-deg2Off)/90*900+1500
+	elif (deg2Off <= deg2 <= 90+deg2Off):
+		output2 = (rad2deg(theta2)-deg2Off)/90*900+600
+	else:
+		output2 = nan	# set software limit 
+	return deg1,deg2,output1,output2

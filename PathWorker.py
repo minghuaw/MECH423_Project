@@ -63,7 +63,7 @@ class PathWorker(QObject):
 		tx = self.x0 + self.dx
 		ty = self.y0 + self.dy
 		degLeft, degRight, servoLeft, servoRight = inv_kinematics(tx, ty)
-		print (servoLeft, servoRight)
+		# print (servoLeft, servoRight)
 
 		# check if solution is valid
 		if math.isnan(servoLeft) or math.isnan(servoRight):
@@ -76,9 +76,10 @@ class PathWorker(QObject):
 			# update current values
 			self.x0 = tx
 			self.y0 = ty
-			print("x0: {} y0: {}".format(self.x0, self.y0))
 			self.servoLeft = servoLeft
 			self.servoRight = servoRight
+			print(self.x0, self.y0)
+			print(servoLeft,servoRight)
 
 			# send command to arduino
 			self.send_command(servoLeft, servoRight)
@@ -96,13 +97,14 @@ class PathWorker(QObject):
 
 	def sketch_image(self, paths):
 		print("sketch image")
+		self.lift = 0x00
 		self.path_ind = 0
 		self.liftFlag = True
 		self.paths = paths
 		self.sketch_next_point()
 
 	def sketch_next_point(self):
-		print("path_ind {} len(path) {}".format(self.path_ind, len(self.paths)))
+		# print(self.path_ind, len(self.paths))
 		if self.path_ind >= len(self.paths) or self.path_ind==nan:
 			print("finish sketching")
 			self.path_ind = nan

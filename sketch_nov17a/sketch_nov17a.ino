@@ -11,8 +11,8 @@
 #define RX_BUFFER_SIZE 7
 #define UP 1
 #define DOWN 0
-#define DOWN_ANGLE 1320
-#define UP_ANGLE 1500
+#define DOWN_ANGLE 1420
+#define UP_ANGLE 1520
 #define WIPE_UP 2300
 
 Servo myservo_l;

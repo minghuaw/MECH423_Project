@@ -16,10 +16,20 @@ def main():
 
 		# cv2.imshow('frame',frame)
 		# cv2.imshow('edge',edge)
+		frame = cv2.transpose(frame)
+		dst = cv2.stylization(frame, sigma_s=60, sigma_r=0.07)
+		gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+		th2 = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_MEAN_C,\
+            cv2.THRESH_BINARY,11,2)
+		cv2.imshow('frame',frame)
+		cv2.imshow('style',dst)
+		cv2.imshow('thresh',th2)
+		contour_canvas = frame
 
 		print(len(contours))
 		for cnt in contours:
 			cv2.drawContours(contour_canvas, [cnt],  0, (0, 255, 0), 3)
+		cv2.imshow('contour',contour_canvas)
 
 			# if cv2.waitKey(0) & 0xFF == ord('n'):
 			# 	if cv2.contourArea(cnt) > 10:
